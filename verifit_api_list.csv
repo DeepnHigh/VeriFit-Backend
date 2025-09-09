@@ -1,0 +1,41 @@
+API name,Field,Method,API_Path,역할
+지원자 마이페이지,지원자,GET,/applicants/{user_id},"지원자 마이페이지
+- 기본 정보 가져오기
+- 업로드 파일 가져오기
+- 적성검사 결과 가져오기
+- ai qna(own-qna) 가져오기"
+지원자 짧은소개 등록,지원자,POST,/applicants/bio/{user_id},지원자 짧은소개(bio) 등록
+지원자 짧은소개 수정,지원자,PUT,/applicants/bio/{user_id},지원자 짧은소개(bio) 수정
+지원자 기본정보 등록,지원자,POST,/applicants/info/{user_id},지원자 기본정보 직접 등록
+지원자 기본정보 수정,지원자,PUT,/applicants/info/{user_id},지원자 기본정보 수정
+지원자 파싱 생성,지원자,GET,/applicants/parses/{user_id},지원자 DB에 있는 파일로부터 지원자 기본정보 채우기(업로드한 문서로 개인정보 채우기)
+지원자 파싱 컨펌 및 저장,지원자,PUT,/applicants/parses/{user_id},파싱으로 가져온 정보들 확인 및 필요하다면 수정하여 최종 저장
+지원자 파일 업로드,지원자,POST,/docs/{user_id},지원자 파일 업로드
+지원자 파일 개별 조회,전체,GET,/docs/{document_id},지원자가 업로드한 파일 개별 보기(다운로드)
+지원자 파일 개별 삭제,지원자,DELETE,/docs/{document_id},지원자가 업로드한 파일 삭제
+지원자 적성검사 제출,지원자,POST,/aptitudes/{user_id},적성검사 파일을 받아 지원자DB 저장 및 유형별 점수 및 결과 해석 리턴
+지원자 행동검사 제출,지원자,POST,/behaviors/{user_id},행동검사 파일을 받아 지원자DB 저장 
+지원자 질문답변 생성,지원자,POST,/own-qnas/{user_id}/{question_id},ai학습을 위한 질문답변 작성 
+지원자 질문답변 수정,지원자,PUT,/own-qnas/{user_id},ai학습을 위한 질문답변 수정
+기업 채용관리 페이지,기업,GET,/job-postings,"채용관리 페이지
+- 공고 리스트 가져오기(공고내용)"
+기업 구인공고 생성,기업,POST,/job-postings,신규 구인공고 필드(내용+AI 평가기준) 입력 받아 구인공고DB저장 및 수정(Disabled)
+기업 구인공고 공고보기,기업,GET,/job-postings/{job_postings_id},공고보기 버튼
+기업 채용관리 공고마감,기업,PUT,/job-postings/{job_postings_id},공고보기 버튼 - 공고마감 버튼 (Disabled)
+질의응답 및 리포트 생성,기업,POST,/interviews/{job_postings_id},"지원자AI와 면접관AI 인터뷰 진행 및 전체 지원자, 개별 지원자 리포트 생성"
+기업 채용현황 페이지,기업,GET,/interviews/{job_postings_id},"채용 현황 페이지 
+- overall_report 가져오기
+- 지원자 순위 가져오기"
+개별리포트 조회,기업,GET,/interviews/{applications_id},"개별 지원자 리포트 불러오기(상세보기 버튼)
+- ai_evaluations 가져오기(세부점수, 종합 리포트, 최종 의견)
+- 적성검사 결과 가져오기
+- 행동검사 결과 가져오기
+- AI 면접 대화 하이라이트 가져오기"
+AI 면접 대화 전체 조회,기업,GET,/interviews/conversations/{applications_id},AI 면접 대화 전체 불러오기
+지원자 프로필 조회,기업,GET,/interviews/profiles/{applications_id},"지원자 프로필(기업전용)
+- 지원자 기본정보 가져오기
+- 지원자가 업로드한 파일 전체 목록 가져오기
+- 적성검사 결과 가져오기
+- 행동검사 결과 가져오기
+- 질문답변 가져오기"
+로그인,전체,POST,/login,로그인 API

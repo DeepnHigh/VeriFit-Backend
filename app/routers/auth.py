@@ -1,5 +1,4 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from app.database.database import get_db
 from app.schemas.user import UserCreate, UserResponse, UserLogin
@@ -7,16 +6,15 @@ from app.services.auth_service import AuthService
 from app.core.security import create_access_token
 
 router = APIRouter()
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 @router.post("/login", response_model=dict)
 async def login(
-    form_data: OAuth2PasswordRequestForm = Depends(),
+    user_data: UserLogin,
     db: Session = Depends(get_db)
 ):
     """로그인 API"""
     auth_service = AuthService(db)
-    user = auth_service.authenticate_user(form_data.username, form_data.password)
+    user = auth_service.authenticate_user(user_data.email, user_data.password)
     
     if not user:
         raise HTTPException(

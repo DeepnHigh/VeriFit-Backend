@@ -3,7 +3,7 @@
 ## 🔧 RDS 연결 정보
 - **엔드포인트**: verifit-db.cpk0oamsu0g6.us-west-1.rds.amazonaws.com
 - **포트**: 5432
-- **데이터베이스**: verifit-db
+- **데이터베이스**: verifit_db
 - **사용자명**: verifit_master
 - **비밀번호**: verifit123
 - **리전**: us-west-1 (캘리포니아)

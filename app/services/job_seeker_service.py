@@ -1,5 +1,9 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from app.models.job_seeker import JobSeeker
+from app.models.aptitude_test_result import AptitudeTestResult
+from app.models.job_seeker_ai_learning_response import JobSeekerAILearningResponse
+from app.models.ai_learning_question import AILearningQuestion
+from app.models.job_seeker_document import JobSeekerDocument
 import uuid
 
 class JobSeekerService:
@@ -53,3 +57,40 @@ class JobSeekerService:
     def update_applicant_info(self, user_id: str | uuid.UUID, info_data: dict) -> JobSeeker:
         """지원자 기본정보 수정"""
         return self.create_applicant_info(user_id, info_data)
+    
+    def get_mypage_data(self, user_id: str | uuid.UUID) -> dict:
+        """마이페이지용 종합 데이터 조회"""
+        uid = self._to_uuid(user_id)
+        
+        # 1. JobSeeker 기본 정보 조회
+        job_seeker = self.db.query(JobSeeker).filter(JobSeeker.user_id == uid).first()
+        
+        if not job_seeker:
+            return None
+        
+        # 2. 적성검사 결과 조회
+        aptitude_results = self.db.query(AptitudeTestResult).filter(
+            AptitudeTestResult.job_seeker_id == job_seeker.id
+        ).all()
+        
+        # 3. AI 학습 응답 조회 (질문 정보 포함)
+        ai_responses = self.db.query(JobSeekerAILearningResponse).options(
+            joinedload(JobSeekerAILearningResponse.question)
+        ).filter(
+            JobSeekerAILearningResponse.job_seeker_id == job_seeker.id
+        ).all()
+        
+        # 4. 문서 조회
+        documents = self.db.query(JobSeekerDocument).filter(
+            JobSeekerDocument.job_seeker_id == job_seeker.id
+        ).all()
+        
+        # 결과를 딕셔너리로 구성
+        result = {
+            'job_seeker': job_seeker,
+            'aptitude_test_results': aptitude_results,
+            'ai_learning_responses': ai_responses,
+            'documents': documents
+        }
+        
+        return result

@@ -19,3 +19,4 @@ class User(Base):
     # 관계 설정
     job_seeker = relationship("JobSeeker", back_populates="user", uselist=False)
     company = relationship("Company", back_populates="user", uselist=False)
+

@@ -72,3 +72,65 @@ class JobSeekerDocumentResponse(JobSeekerDocumentBase):
     
     class Config:
         from_attributes = True
+
+# 적성검사 결과 스키마
+class AptitudeTestResultForMyPage(BaseModel):
+    id: str
+    test_date: datetime
+    test_duration_minutes: Optional[int] = None
+    realistic_score: Decimal
+    investigative_score: Decimal
+    artistic_score: Decimal
+    social_score: Decimal
+    enterprising_score: Decimal
+    conventional_score: Decimal
+    overall_analysis: Optional[str] = None
+    
+    class Config:
+        from_attributes = True
+
+# AI 학습 질문 스키마
+class AILearningQuestionForMyPage(BaseModel):
+    id: str
+    question_category: str
+    question_text: str
+    display_order: int
+    
+    class Config:
+        from_attributes = True
+
+# AI 학습 응답 스키마 (질문 포함)
+class AILearningResponseForMyPage(BaseModel):
+    id: str
+    answer_text: str
+    response_date: datetime
+    question: AILearningQuestionForMyPage
+    
+    class Config:
+        from_attributes = True
+
+# 마이페이지 전체 응답 스키마
+class JobSeekerMyPageResponse(JobSeekerBase):
+    id: uuid.UUID
+    user_id: uuid.UUID
+    profile_picture: Optional[str] = None
+    github_repositories: Optional[List[Dict[str, Any]]] = None
+    portfolios: Optional[List[Dict[str, Any]]] = None
+    resumes: Optional[List[Dict[str, Any]]] = None
+    awards: Optional[List[Dict[str, Any]]] = None
+    certificates: Optional[List[Dict[str, Any]]] = None
+    qualifications: Optional[List[Dict[str, Any]]] = None
+    papers: Optional[List[Dict[str, Any]]] = None
+    cover_letters: Optional[List[Dict[str, Any]]] = None
+    other_documents: Optional[List[Dict[str, Any]]] = None
+    profile_completion_percentage: Decimal
+    last_profile_update: Optional[datetime] = None
+    created_at: datetime
+    
+    # 추가 관련 데이터
+    aptitude_test_results: List[AptitudeTestResultForMyPage] = []
+    ai_learning_responses: List[AILearningResponseForMyPage] = []
+    documents: List[JobSeekerDocumentResponse] = []
+    
+    class Config:
+        from_attributes = True

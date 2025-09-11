@@ -27,7 +27,7 @@ async def login(
     return {
         "access_token": access_token,
         "token_type": "bearer",
-        "user": UserResponse.from_orm(user)
+        "user": UserResponse.model_validate(user)
     }
 
 @router.post("/register", response_model=UserResponse)
@@ -46,4 +46,4 @@ async def register(
         )
     
     user = auth_service.create_user(user_data)
-    return UserResponse.from_orm(user)
+    return UserResponse.model_validate(user)

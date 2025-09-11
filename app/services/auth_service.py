@@ -16,7 +16,7 @@ class AuthService:
         user = self.get_user_by_email(email)
         if not user:
             return None
-        if not verify_password(password, user.password_hash):
+        if not verify_password(password, user.password):
             return None
         return user
     
@@ -25,8 +25,7 @@ class AuthService:
         hashed_password = get_password_hash(user_data.password)
         db_user = User(
             email=user_data.email,
-            password_hash=hashed_password,
-            name=user_data.name,
+            password=hashed_password,
             user_type=user_data.user_type
         )
         self.db.add(db_user)

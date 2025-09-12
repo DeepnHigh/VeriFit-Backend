@@ -5,6 +5,6 @@ if __name__ == "__main__":
         "main:app",
         host="0.0.0.0",
         port=8000,
-        reload=True,  # 개발 모드에서 자동 재시작
+        reload=False,  # reload 비활성화
         log_level="info"
     )

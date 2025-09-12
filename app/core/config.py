@@ -4,7 +4,7 @@ from typing import Optional
 class Settings(BaseSettings):
     # 데이터베이스 설정
     # 개발용: SQLite, 프로덕션용: RDS PostgreSQL (해커톤 규칙)
-    # SQLite database_url: str = "sqlite:///./verifit.db"
+    # database_url: str = "sqlite:///./verifit.db"
     database_url: str = "postgresql://verifit_master:verifit123@verifit-db.cpk0oamsu0g6.us-west-1.rds.amazonaws.com:5432/verifit_db"
     # RDS PostgreSQL 예시: "postgresql://username:password@rds-endpoint.region.rds.amazonaws.com:5432/verifit_db"
     

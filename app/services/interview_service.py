@@ -28,7 +28,7 @@ class InterviewService:
         return {
             "application_id": application_id,
             "ai_evaluations": {},
-            "aptitude_test_results": {},
+            "big5_test_results": {},
             "behavior_test_results": {},
             "interview_highlights": []
         }
@@ -48,7 +48,7 @@ class InterviewService:
             "application_id": application_id,
             "applicant_info": {},
             "documents": [],
-            "aptitude_test_results": {},
+            "big5_test_results": {},
             "behavior_test_results": {},
             "own_qnas": []
         }

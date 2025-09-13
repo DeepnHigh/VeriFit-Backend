@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session, joinedload
 from fastapi import UploadFile, HTTPException, status
 from app.models.job_seeker import JobSeeker
-from app.models.aptitude_test_result import AptitudeTestResult
+from app.models.big5_test_result import Big5TestResult
 from app.models.job_seeker_ai_learning_response import JobSeekerAILearningResponse
 from app.models.ai_learning_question import AILearningQuestion
 from app.models.job_seeker_document import JobSeekerDocument
@@ -74,9 +74,9 @@ class JobSeekerService:
         if not job_seeker:
             return None
         
-        # 2. 적성검사 결과 조회
-        aptitude_results = self.db.query(AptitudeTestResult).filter(
-            AptitudeTestResult.job_seeker_id == job_seeker.id
+        # 2. Big5 성격검사 결과 조회
+        big5_results = self.db.query(Big5TestResult).filter(
+            Big5TestResult.job_seeker_id == job_seeker.id
         ).all()
         
         # 3. AI 학습 응답 조회 (질문 정보 포함)
@@ -94,7 +94,7 @@ class JobSeekerService:
         # 결과를 딕셔너리로 구성
         return {
             'job_seeker': job_seeker,
-            'aptitude_test_results': aptitude_results,
+            'big5_test_results': big5_results,
             'ai_learning_responses': ai_responses,
             'documents': documents
         }

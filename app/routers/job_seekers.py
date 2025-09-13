@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from sqlalchemy.orm import Session
 from app.database.database import get_db
 from app.services.job_seeker_service import JobSeekerService
@@ -114,4 +114,66 @@ async def update_job_seeker_info(
     """구직자 기본정보 수정"""
     service = JobSeekerService(db)
     return service.update_applicant_info(user_id, info_data.model_dump(exclude_unset=True))
+
+@router.post("/s3/upload/{user_id}/{document_type}")
+async def upload_job_seeker_document_s3(
+    user_id: str,
+    document_type: str,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db)
+):
+    """구직자 문서 업로드 - S3 저장 (프론트엔드 호환)"""
+    service = JobSeekerService(db)
+    return await service.upload_file(user_id, document_type, file)
+
+@router.get("/s3/files/{user_id}")
+async def get_user_files(user_id: str, db: Session = Depends(get_db)):
+    """사용자별 파일 목록 조회 (프론트엔드 호환)"""
+    service = JobSeekerService(db)
+    mypage_data = service.get_mypage_data(user_id)
+    
+    if not mypage_data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="구직자 정보를 찾을 수 없습니다"
+        )
+    
+    # 문서 목록을 타입별로 그룹화
+    documents = mypage_data['documents']
+    
+    # 타입별로 그룹화
+    grouped_files = {
+        "award": [],
+        "certificate": [],
+        "cover_letter": [],
+        "other": [],
+        "paper": [],
+        "portfolio": [],
+        "qualification": [],
+        "resume": [],
+        "github": []
+    }
+    
+    for doc in documents:
+        doc_type = getattr(doc, 'document_type', 'other')
+        if doc_type in grouped_files:
+            grouped_files[doc_type].append({
+                "name": getattr(doc, 'file_name', ''),
+                "size": getattr(doc, 'file_size', 0),
+                "lastModified": getattr(doc, 'created_at', ''),
+                "downloadUrl": getattr(doc, 'file_url', '')
+            })
+    
+    return grouped_files
+
+@router.delete("/s3/delete/{user_id}/{file_type}/{file_name}")
+async def delete_file(
+    user_id: str,
+    file_type: str,
+    file_name: str,
+    db: Session = Depends(get_db)
+):
+    """파일 삭제 API (프론트엔드 호환)"""
+    service = JobSeekerService(db)
+    return await service.delete_file(user_id, file_type, file_name)
 

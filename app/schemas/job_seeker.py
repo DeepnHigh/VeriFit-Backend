@@ -66,8 +66,8 @@ class JobSeekerDocumentCreate(JobSeekerDocumentBase):
     job_seeker_id: str
 
 class JobSeekerDocumentResponse(JobSeekerDocumentBase):
-    id: str
-    job_seeker_id: str
+    id: uuid.UUID
+    job_seeker_id: uuid.UUID
     uploaded_at: datetime
     
     class Config:
@@ -75,7 +75,7 @@ class JobSeekerDocumentResponse(JobSeekerDocumentBase):
 
 # 적성검사 결과 스키마
 class AptitudeTestResultForMyPage(BaseModel):
-    id: str
+    id: uuid.UUID
     test_date: datetime
     test_duration_minutes: Optional[int] = None
     realistic_score: Decimal
@@ -91,7 +91,7 @@ class AptitudeTestResultForMyPage(BaseModel):
 
 # AI 학습 질문 스키마
 class AILearningQuestionForMyPage(BaseModel):
-    id: str
+    id: uuid.UUID
     question_category: str
     question_text: str
     display_order: int
@@ -101,7 +101,7 @@ class AILearningQuestionForMyPage(BaseModel):
 
 # AI 학습 응답 스키마 (질문 포함)
 class AILearningResponseForMyPage(BaseModel):
-    id: str
+    id: uuid.UUID
     answer_text: str
     response_date: datetime
     question: AILearningQuestionForMyPage

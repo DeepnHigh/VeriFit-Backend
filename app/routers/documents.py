@@ -7,13 +7,14 @@ router = APIRouter()
 
 @router.post("/docs/{user_id}")
 async def upload_document(
-    user_id: int,
+    user_id: str,
+    document_type: str,
     file: UploadFile = File(...),
     db: Session = Depends(get_db)
 ):
-    """지원자 파일 업로드"""
+    """지원자 파일 업로드 - S3 저장"""
     service = DocumentService(db)
-    return service.upload_document(user_id, file)
+    return await service.upload_document(user_id, file, document_type)
 
 @router.get("/docs/{document_id}")
 async def get_document(

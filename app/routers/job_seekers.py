@@ -126,6 +126,87 @@ async def upload_job_seeker_document_s3(
     service = JobSeekerService(db)
     return await service.upload_file(user_id, document_type, file)
 
+# 각 문서 타입별 개별 업로드 엔드포인트
+@router.post("/s3/upload/{user_id}/cover_letter")
+async def upload_cover_letter(
+    user_id: str,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db)
+):
+    """자기소개서 업로드"""
+    service = JobSeekerService(db)
+    return await service.upload_file(user_id, "cover_letter", file)
+
+@router.post("/s3/upload/{user_id}/resume")
+async def upload_resume(
+    user_id: str,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db)
+):
+    """이력서 업로드"""
+    service = JobSeekerService(db)
+    return await service.upload_file(user_id, "resume", file)
+
+@router.post("/s3/upload/{user_id}/portfolio")
+async def upload_portfolio(
+    user_id: str,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db)
+):
+    """포트폴리오 업로드"""
+    service = JobSeekerService(db)
+    return await service.upload_file(user_id, "portfolio", file)
+
+@router.post("/s3/upload/{user_id}/award")
+async def upload_award(
+    user_id: str,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db)
+):
+    """수상경력 업로드"""
+    service = JobSeekerService(db)
+    return await service.upload_file(user_id, "award", file)
+
+@router.post("/s3/upload/{user_id}/certificate")
+async def upload_certificate(
+    user_id: str,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db)
+):
+    """증명서 업로드"""
+    service = JobSeekerService(db)
+    return await service.upload_file(user_id, "certificate", file)
+
+@router.post("/s3/upload/{user_id}/qualification")
+async def upload_qualification(
+    user_id: str,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db)
+):
+    """자격증 업로드"""
+    service = JobSeekerService(db)
+    return await service.upload_file(user_id, "qualification", file)
+
+@router.post("/s3/upload/{user_id}/paper")
+async def upload_paper(
+    user_id: str,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db)
+):
+    """논문 업로드"""
+    service = JobSeekerService(db)
+    return await service.upload_file(user_id, "paper", file)
+
+@router.post("/s3/upload/{user_id}/other")
+async def upload_other(
+    user_id: str,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db)
+):
+    """기타자료 업로드"""
+    service = JobSeekerService(db)
+    return await service.upload_file(user_id, "other", file)
+
 @router.get("/s3/files/{user_id}")
 async def get_user_files(user_id: str, db: Session = Depends(get_db)):
     """사용자별 파일 목록 조회 (프론트엔드 호환)"""
@@ -176,4 +257,85 @@ async def delete_file(
     """파일 삭제 API (프론트엔드 호환)"""
     service = JobSeekerService(db)
     return await service.delete_file(user_id, file_type, file_name)
+
+# 각 문서 타입별 개별 삭제 엔드포인트
+@router.delete("/s3/delete/{user_id}/cover_letter/{file_name}")
+async def delete_cover_letter(
+    user_id: str,
+    file_name: str,
+    db: Session = Depends(get_db)
+):
+    """자기소개서 삭제"""
+    service = JobSeekerService(db)
+    return await service.delete_file(user_id, "cover_letter", file_name)
+
+@router.delete("/s3/delete/{user_id}/resume/{file_name}")
+async def delete_resume(
+    user_id: str,
+    file_name: str,
+    db: Session = Depends(get_db)
+):
+    """이력서 삭제"""
+    service = JobSeekerService(db)
+    return await service.delete_file(user_id, "resume", file_name)
+
+@router.delete("/s3/delete/{user_id}/portfolio/{file_name}")
+async def delete_portfolio(
+    user_id: str,
+    file_name: str,
+    db: Session = Depends(get_db)
+):
+    """포트폴리오 삭제"""
+    service = JobSeekerService(db)
+    return await service.delete_file(user_id, "portfolio", file_name)
+
+@router.delete("/s3/delete/{user_id}/award/{file_name}")
+async def delete_award(
+    user_id: str,
+    file_name: str,
+    db: Session = Depends(get_db)
+):
+    """수상경력 삭제"""
+    service = JobSeekerService(db)
+    return await service.delete_file(user_id, "award", file_name)
+
+@router.delete("/s3/delete/{user_id}/certificate/{file_name}")
+async def delete_certificate(
+    user_id: str,
+    file_name: str,
+    db: Session = Depends(get_db)
+):
+    """증명서 삭제"""
+    service = JobSeekerService(db)
+    return await service.delete_file(user_id, "certificate", file_name)
+
+@router.delete("/s3/delete/{user_id}/qualification/{file_name}")
+async def delete_qualification(
+    user_id: str,
+    file_name: str,
+    db: Session = Depends(get_db)
+):
+    """자격증 삭제"""
+    service = JobSeekerService(db)
+    return await service.delete_file(user_id, "qualification", file_name)
+
+@router.delete("/s3/delete/{user_id}/paper/{file_name}")
+async def delete_paper(
+    user_id: str,
+    file_name: str,
+    db: Session = Depends(get_db)
+):
+    """논문 삭제"""
+    service = JobSeekerService(db)
+    return await service.delete_file(user_id, "paper", file_name)
+
+@router.delete("/s3/delete/{user_id}/other/{file_name}")
+async def delete_other(
+    user_id: str,
+    file_name: str,
+    db: Session = Depends(get_db)
+):
+    """기타자료 삭제"""
+    service = JobSeekerService(db)
+    return await service.delete_file(user_id, "other", file_name)
 

@@ -3,6 +3,7 @@ from app.models.ai_learning_question import AILearningQuestion
 from app.models.job_seeker_ai_learning_response import JobSeekerAILearningResponse
 from app.schemas.ai_learning import (
     AILearningQuestionCreate, 
+    AILearningQuestionResponse,
     JobSeekerAILearningResponseCreate
 )
 from typing import List, Optional
@@ -12,11 +13,21 @@ class AILearningService:
     def __init__(self, db: Session):
         self.db = db
 
-    def get_ai_learning_questions(self) -> List[AILearningQuestion]:
+    def get_ai_learning_questions(self) -> List[AILearningQuestionResponse]:
         """AI 학습용 질문 목록 조회"""
-        return self.db.query(AILearningQuestion).order_by(
+        questions = self.db.query(AILearningQuestion).order_by(
             AILearningQuestion.display_order
         ).all()
+        
+        # SQLAlchemy 모델을 Pydantic 모델로 변환
+        return [
+            AILearningQuestionResponse(
+                id=str(question.id),
+                question_text=question.question_text,
+                display_order=question.display_order
+            )
+            for question in questions
+        ]
 
     def create_ai_learning_response(
         self, 

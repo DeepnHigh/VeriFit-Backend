@@ -95,7 +95,6 @@ class Big5TestResultForMyPage(BaseModel):
 # AI 학습 질문 스키마
 class AILearningQuestionForMyPage(BaseModel):
     id: uuid.UUID
-    question_category: str
     question_text: str
     display_order: int
     

@@ -135,12 +135,10 @@ Table big5_test_results {
 // AI 학습용 질문 템플릿 테이블
 Table ai_learning_questions {
   id uuid [primary key, default: `uuid_generate_v4()`]
-  question_category varchar(100) [not null] // 질문 카테고리
   question_text text [not null] // 질문 내용
   display_order integer [default: 0] // 표시 순서
   
   indexes {
-    question_category
     display_order
   }
 }

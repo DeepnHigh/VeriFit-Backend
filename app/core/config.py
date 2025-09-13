@@ -17,6 +17,9 @@ class Settings(BaseSettings):
     upload_dir: str = "uploads"
     max_file_size: int = 10 * 1024 * 1024  # 10MB
     
+    # AWS S3 설정 (URL 기반)
+    s3_base_url: str = "https://seoul-ht-01.s3.us-west-1.amazonaws.com/job_seeker_documents/"
+    
     class Config:
         env_file = ".env"
 

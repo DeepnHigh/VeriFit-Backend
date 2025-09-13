@@ -9,3 +9,4 @@ passlib[bcrypt]==1.7.4
 python-dotenv==1.0.0
 pydantic==2.5.0
 pydantic-settings==2.1.0
+aiohttp==3.9.1  # HTTP 클라이언트 (S3 업로드용)

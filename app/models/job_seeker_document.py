@@ -10,7 +10,7 @@ class JobSeekerDocument(Base):
     
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     job_seeker_id = Column(UUID(as_uuid=True), ForeignKey("job_seekers.id"), nullable=False)
-    document_type = Column(Enum('portfolio', 'resume', 'award', 'certificate', 'qualification', 'paper', 'cover_letter', 'other', name='document_type_enum'), nullable=False)
+    document_type = Column(Enum('portfolio', 'resume', 'award', 'certificate', 'qualification', 'paper', 'cover_letter', 'other', 'github', name='document_type_enum'), nullable=False)
     file_name = Column(String(255), nullable=False)
     file_url = Column(String(500), nullable=False)
     file_size = Column(Integer)  # bytes

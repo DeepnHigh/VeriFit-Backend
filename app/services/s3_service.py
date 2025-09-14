@@ -113,12 +113,16 @@ class S3Service:
     
     def get_file_url(self, file_path: str) -> str:
         """
-        파일 다운로드 URL 생성
+        파일 다운로드 URL 생성 (로컬 파일 시스템용)
         
         Args:
-            file_path: 파일 경로
+            file_path: 파일 경로 (uploads/{user_id}/{document_type}/{filename})
             
         Returns:
             str: 파일 다운로드 URL
         """
-        return f"{self.s3_base_url}{file_path}"
+        # uploads/ 경로를 /files/로 변경하여 로컬 서버 URL 생성
+        if file_path.startswith("uploads/"):
+            relative_path = file_path.replace("uploads/", "")
+            return f"http://localhost:8000/files/{relative_path}"
+        return f"http://localhost:8000/files/{file_path}"

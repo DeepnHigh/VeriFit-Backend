@@ -2,9 +2,11 @@ from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from sqlalchemy.orm import Session
 from app.database.database import get_db
 from app.services.job_seeker_service import JobSeekerService
+from app.services.personal_info_service import PersonalInfoService
 from app.schemas.job_seeker import (
     JobSeekerResponse, JobSeekerUpdate, JobSeekerDocumentResponse, JobSeekerMyPageResponse
 )
+from app.schemas.personal_info import PersonalInfoResponse
 
 router = APIRouter()
 
@@ -245,14 +247,23 @@ async def get_user_files(user_id: str, db: Session = Depends(get_db)):
         "github": []
     }
     
+    # S3Service 인스턴스 생성 (로컬 URL 생성용)
+    from app.services.s3_service import S3Service
+    s3_service = S3Service()
+    
     for doc in documents:
         doc_type = getattr(doc, 'document_type', 'other')
         if doc_type in grouped_files:
+            # 로컬 파일 경로 생성
+            file_path = f"uploads/{user_id}/{doc_type}/{getattr(doc, 'file_name', '')}"
+            # 로컬 URL 생성
+            local_url = s3_service.get_file_url(file_path)
+            
             grouped_files[doc_type].append({
                 "name": getattr(doc, 'file_name', ''),
                 "size": getattr(doc, 'file_size', 0),
                 "lastModified": getattr(doc, 'created_at', ''),
-                "downloadUrl": getattr(doc, 'file_url', '')
+                "downloadUrl": local_url
             })
     
     return grouped_files
@@ -358,4 +369,13 @@ async def delete_github(
     """GitHub 링크 삭제"""
     service = JobSeekerService(db)
     return await service.delete_file(user_id, "github", file_name)
+
+@router.get("/applicants/parses/{user_id}", response_model=PersonalInfoResponse)
+async def parse_personal_info(
+    user_id: str,
+    db: Session = Depends(get_db)
+):
+    """업로드한 문서로 개인정보 자동 채우기"""
+    service = PersonalInfoService(db)
+    return await service.parse_personal_info(user_id)
 

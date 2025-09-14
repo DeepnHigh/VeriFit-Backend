@@ -16,11 +16,10 @@ class AILearningQuestionResponse(AILearningQuestionBase):
         from_attributes = True
 
 class JobSeekerAILearningResponseBase(BaseModel):
-    answer_text: str
+    answer: str
 
 class JobSeekerAILearningResponseCreate(JobSeekerAILearningResponseBase):
-    job_seeker_id: str
-    question_id: str
+    pass
 
 class JobSeekerAILearningResponseResponse(JobSeekerAILearningResponseBase):
     id: str

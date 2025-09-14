@@ -40,7 +40,7 @@ class AILearningService:
         db_response = JobSeekerAILearningResponse(
             job_seeker_id=user_id,
             question_id=question_id,
-            answer_text=response_data.answer_text
+            answer_text=response_data.answer
         )
         
         self.db.add(db_response)
@@ -62,7 +62,7 @@ class AILearningService:
         ).order_by(JobSeekerAILearningResponse.response_date.desc()).first()
         
         if existing_response:
-            existing_response.answer_text = response_data.answer_text
+            existing_response.answer_text = response_data.answer
             self.db.commit()
             self.db.refresh(existing_response)
             return existing_response

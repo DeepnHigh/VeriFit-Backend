@@ -61,14 +61,55 @@ async def root():
 async def health_check():
     return {"status": "healthy"}
 
+@app.get("/pool-status")
+async def pool_status():
+    """데이터베이스 연결 풀 상태 확인"""
+    try:
+        from app.database.database import get_pool_status, check_db_connection
+        
+        connection_status = check_db_connection()
+        pool_status = get_pool_status()
+        
+        return {
+            "connection_status": connection_status,
+            "pool_status": pool_status,
+            "recommendations": {
+                "high_overflow": "연결 풀 오버플로우가 높습니다. pool_size를 늘리거나 max_overflow를 조정하세요.",
+                "many_invalid": "무효한 연결이 많습니다. pool_recycle 시간을 줄이거나 네트워크 상태를 확인하세요.",
+                "all_checked_out": "모든 연결이 사용 중입니다. pool_size를 늘리거나 애플리케이션의 연결 사용 패턴을 확인하세요."
+            }
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "error": str(e)
+        }
+
+@app.post("/dispose-pool")
+async def dispose_connection_pool():
+    """데이터베이스 연결 풀 강제 정리"""
+    try:
+        from app.database.database import dispose_pool
+        
+        result = dispose_pool()
+        return result
+    except Exception as e:
+        return {
+            "status": "error",
+            "error": str(e)
+        }
+
 @app.get("/db-status")
 async def database_status():
     """데이터베이스 연결 및 테이블 상태 확인"""
     try:
         from sqlalchemy import text
-        from app.database.database import engine
+        from app.database.database import engine, check_db_connection, get_pool_status
         
         # 연결 테스트
+        connection_status = check_db_connection()
+        pool_status = get_pool_status()
+        
         with engine.connect() as conn:
             # 테이블 목록 조회
             result = conn.execute(text("""
@@ -88,6 +129,8 @@ async def database_status():
             return {
                 "status": "connected",
                 "database": "RDS PostgreSQL",
+                "connection_status": connection_status,
+                "pool_status": pool_status,
                 "tables": tables,
                 "table_counts": table_counts,
                 "total_tables": len(tables)

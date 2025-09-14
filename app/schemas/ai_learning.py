@@ -3,7 +3,6 @@ from typing import Optional
 from datetime import datetime
 
 class AILearningQuestionBase(BaseModel):
-    question_category: str
     question_text: str
     display_order: int = 0
 

@@ -73,18 +73,21 @@ class JobSeekerDocumentResponse(JobSeekerDocumentBase):
     class Config:
         from_attributes = True
 
-# 적성검사 결과 스키마
-class AptitudeTestResultForMyPage(BaseModel):
+# Big5 성격검사 결과 스키마
+class Big5TestResultForMyPage(BaseModel):
     id: uuid.UUID
     test_date: datetime
-    test_duration_minutes: Optional[int] = None
-    realistic_score: Decimal
-    investigative_score: Decimal
-    artistic_score: Decimal
-    social_score: Decimal
-    enterprising_score: Decimal
-    conventional_score: Decimal
-    overall_analysis: Optional[str] = None
+    openness_score: Decimal
+    conscientiousness_score: Decimal
+    extraversion_score: Decimal
+    agreeableness_score: Decimal
+    neuroticism_score: Decimal
+    openness_level: str
+    conscientiousness_level: str
+    extraversion_level: str
+    agreeableness_level: str
+    neuroticism_level: str
+    interpretations: Optional[Dict[str, Any]] = None
     
     class Config:
         from_attributes = True
@@ -92,7 +95,6 @@ class AptitudeTestResultForMyPage(BaseModel):
 # AI 학습 질문 스키마
 class AILearningQuestionForMyPage(BaseModel):
     id: uuid.UUID
-    question_category: str
     question_text: str
     display_order: int
     
@@ -128,7 +130,7 @@ class JobSeekerMyPageResponse(JobSeekerBase):
     created_at: datetime
     
     # 추가 관련 데이터
-    aptitude_test_results: List[AptitudeTestResultForMyPage] = []
+    big5_test_results: List[Big5TestResultForMyPage] = []
     ai_learning_responses: List[AILearningResponseForMyPage] = []
     documents: List[JobSeekerDocumentResponse] = []
     

@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from app.routers import (
     job_seekers, job_postings, interviews, auth, documents,
-    aptitude_tests, behavior_tests, ai_learning
+    big5_tests, behavior_tests, ai_learning
 )
 from app.database.database import engine, Base
 
@@ -11,7 +11,7 @@ from app.database.database import engine, Base
 from app.models import (
     user, job_seeker, company, job_posting, application,
     ai_evaluation, ai_interview_message, ai_learning_question, 
-    ai_overall_report, aptitude_test_result, evaluation_criteria,
+    ai_overall_report, big5_test_result, evaluation_criteria,
     job_seeker_ai_agent, job_seeker_ai_learning_response, job_seeker_document
 )
 
@@ -46,7 +46,7 @@ app.include_router(job_seekers.router, tags=["구직자"])
 app.include_router(job_postings.router, tags=["채용공고"])
 app.include_router(interviews.router, tags=["면접"])
 app.include_router(documents.router, tags=["문서"])
-app.include_router(aptitude_tests.router, tags=["적성검사"])
+app.include_router(big5_tests.router, tags=["Big5성격검사"])
 app.include_router(behavior_tests.router, tags=["행동검사"])
 app.include_router(ai_learning.router, tags=["AI학습"])
 

@@ -13,7 +13,7 @@ async def get_job_seeker_profile(
     user_id: str,
     db: Session = Depends(get_db)
 ):
-    """구직자 마이페이지 - 기본 정보, 업로드 파일, 적성검사 결과, AI QnA 가져오기"""
+    """구직자 마이페이지 - 기본 정보, 업로드 파일, Big5 성격검사 결과, AI QnA 가져오기"""
     service = JobSeekerService(db)
     return service.get_applicant_profile(user_id)
 
@@ -23,7 +23,7 @@ async def get_applicant_mypage(
     user_id: str,
     db: Session = Depends(get_db)
 ):
-    """구직자 마이페이지 - 기본 정보, 적성검사 결과, AI 학습 응답, 문서 모두 포함"""
+    """구직자 마이페이지 - 기본 정보, Big5 성격검사 결과, AI 학습 응답, 문서 모두 포함"""
     service = JobSeekerService(db)
     mypage_data = service.get_mypage_data(user_id)
     
@@ -68,7 +68,7 @@ async def get_applicant_mypage(
         'created_at': job_seeker.created_at,
         
         # 추가 관련 데이터
-        'aptitude_test_results': mypage_data['aptitude_test_results'],
+        'big5_test_results': mypage_data['big5_test_results'],
         'ai_learning_responses': mypage_data['ai_learning_responses'],
         'documents': mypage_data['documents']
     }

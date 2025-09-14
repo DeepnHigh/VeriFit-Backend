@@ -88,23 +88,45 @@ Table job_seeker_ai_agents {
   }
 }
 
-// 적성검사 결과 테이블
-Table aptitude_test_results {
+// Big5 성격검사 결과 테이블
+Table big5_test_results {
   id uuid [primary key, default: `uuid_generate_v4()`]
   job_seeker_id uuid [ref: > job_seekers.id, not null]
   test_date timestamp [default: `now()`]
-  test_duration_minutes integer // 검사 소요 시간(분)
-  realistic_score decimal(5,2) [not null] // 현실형 점수
-  investigative_score decimal(5,2) [not null] // 탐구형 점수
-  artistic_score decimal(5,2) [not null] // 예술형 점수
-  social_score decimal(5,2) [not null] // 사회형 점수
-  enterprising_score decimal(5,2) [not null] // 진취형 점수
-  conventional_score decimal(5,2) [not null] // 관습형 점수
-  overall_analysis text // 종합 분석 결과
+  
+  // Big5 주요 차원 점수 (0-100 스케일)
+  openness_score decimal(5,2) [not null] // 개방성 점수
+  conscientiousness_score decimal(5,2) [not null] // 성실성 점수
+  extraversion_score decimal(5,2) [not null] // 외향성 점수
+  agreeableness_score decimal(5,2) [not null] // 우호성 점수
+  neuroticism_score decimal(5,2) [not null] // 신경성 점수
+  
+  // Big5 결과 레벨 (high, neutral, low)
+  openness_level varchar(10) [not null] // 개방성 레벨
+  conscientiousness_level varchar(10) [not null] // 성실성 레벨
+  extraversion_level varchar(10) [not null] // 외향성 레벨
+  agreeableness_level varchar(10) [not null] // 우호성 레벨
+  neuroticism_level varchar(10) [not null] // 신경성 레벨
+  
+  // 세부 특성 점수 (각 차원당 6개)
+  openness_facets jsonb // 개방성 세부 특성 (상상력, 예술성, 감정성, 모험성, 지성, 자유주의)
+  conscientiousness_facets jsonb // 성실성 세부 특성 (자기효능감, 체계성, 의무감, 성취추구, 자기통제, 신중함)
+  extraversion_facets jsonb // 외향성 세부 특성 (친화성, 사교성, 주장성, 활동성, 자극추구, 쾌활함)
+  agreeableness_facets jsonb // 우호성 세부 특성 (신뢰, 도덕성, 이타성, 협력, 겸손, 공감)
+  neuroticism_facets jsonb // 신경성 세부 특성 (불안, 분노, 우울, 자의식, 무절제, 취약성)
+  
+  // 전문적인 해석 결과
+  interpretations jsonb // 전문적인 해석 텍스트 (한국어/영어)
+  raw_scores jsonb // 원본 점수 데이터
   
   indexes {
     job_seeker_id
     test_date
+    openness_score
+    conscientiousness_score
+    extraversion_score
+    agreeableness_score
+    neuroticism_score
   }
 }
 
@@ -113,12 +135,10 @@ Table aptitude_test_results {
 // AI 학습용 질문 템플릿 테이블
 Table ai_learning_questions {
   id uuid [primary key, default: `uuid_generate_v4()`]
-  question_category varchar(100) [not null] // 질문 카테고리
   question_text text [not null] // 질문 내용
   display_order integer [default: 0] // 표시 순서
   
   indexes {
-    question_category
     display_order
   }
 }

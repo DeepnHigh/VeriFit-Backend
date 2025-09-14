@@ -207,6 +207,16 @@ async def upload_other(
     service = JobSeekerService(db)
     return await service.upload_file(user_id, "other", file)
 
+@router.post("/s3/upload/{user_id}/github")
+async def upload_github(
+    user_id: str,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db)
+):
+    """GitHub 링크 업로드"""
+    service = JobSeekerService(db)
+    return await service.upload_file(user_id, "github", file)
+
 @router.get("/s3/files/{user_id}")
 async def get_user_files(user_id: str, db: Session = Depends(get_db)):
     """사용자별 파일 목록 조회 (프론트엔드 호환)"""
@@ -338,4 +348,14 @@ async def delete_other(
     """기타자료 삭제"""
     service = JobSeekerService(db)
     return await service.delete_file(user_id, "other", file_name)
+
+@router.delete("/s3/delete/{user_id}/github/{file_name}")
+async def delete_github(
+    user_id: str,
+    file_name: str,
+    db: Session = Depends(get_db)
+):
+    """GitHub 링크 삭제"""
+    service = JobSeekerService(db)
+    return await service.delete_file(user_id, "github", file_name)
 

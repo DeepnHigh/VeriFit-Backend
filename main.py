@@ -24,17 +24,10 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# CORS 설정
+# CORS 설정 (개발 환경용 - 모든 origin 허용)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",  # Next.js 개발 서버
-        "http://localhost:3001",  # Next.js 대체 포트
-        "http://127.0.0.1:3000",  # 로컬호스트 대체
-        "http://127.0.0.1:3001",  # 로컬호스트 대체
-        "http://192.168.0.21:3000",  # 네트워크 IP
-        "http://192.168.0.21:3001"   # 네트워크 IP 대체 포트
-    ],
+    allow_origins=["*"],  # 개발 환경에서 모든 origin 허용
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

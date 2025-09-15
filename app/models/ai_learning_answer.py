@@ -5,8 +5,8 @@ from sqlalchemy.orm import relationship
 import uuid
 from app.database.database import Base
 
-class JobSeekerAILearningResponse(Base):
-    __tablename__ = "job_seeker_ai_learning_responses"
+class AILearningAnswer(Base):
+    __tablename__ = "ai_laerning_answers"
     
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     job_seeker_id = Column(UUID(as_uuid=True), ForeignKey("job_seekers.id"), nullable=False)
@@ -15,5 +15,5 @@ class JobSeekerAILearningResponse(Base):
     response_date = Column(DateTime(timezone=True), server_default=func.now())
     
     # 관계 설정
-    job_seeker = relationship("JobSeeker", back_populates="ai_learning_responses")
+    job_seeker = relationship("JobSeeker", back_populates="ai_learning_answers")
     question = relationship("AILearningQuestion")

@@ -1,6 +1,7 @@
 from pydantic_settings import BaseSettings
-from pydantic import Field
+from pydantic import Field, model_validator
 from typing import Optional
+import json
 
 class Settings(BaseSettings):
     # 데이터베이스 설정
@@ -33,8 +34,30 @@ class Settings(BaseSettings):
     # API 베이스 URL 설정
     api_base_url: str = Field(default="http://localhost:8000", alias="API_BASE_URL")
     
-    # CORS 설정
-    cors_origins: list = Field(default=["*"], alias="CORS_ORIGINS")
+    # CORS 설정 (자격증명 허용 시 * 사용 불가 → 구체적 오리진 명시)
+    cors_origins: list = Field(
+        default=[
+            "http://localhost:3000",
+            "http://localhost:3001",
+            "http://192.168.0.21:3000",
+            "http://192.168.0.21:3001",
+        ],
+        alias="CORS_ORIGINS",
+    )
+
+    @model_validator(mode="after")
+    def _normalize_cors_origins(self):
+        """환경변수로 전달된 CORS_ORIGINS가 문자열(JSON)일 경우 리스트로 파싱"""
+        origins = self.cors_origins
+        if isinstance(origins, str):
+            try:
+                parsed = json.loads(origins)
+                if isinstance(parsed, list):
+                    self.cors_origins = parsed
+            except Exception:
+                # 쉼표 구분 문자열일 수도 있으니 분리 시도
+                self.cors_origins = [o.strip() for o in origins.split(",") if o.strip()]
+        return self
     
     class Config:
         env_file = ".env"

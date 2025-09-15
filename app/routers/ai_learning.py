@@ -4,8 +4,8 @@ from app.database.database import get_db
 from app.services.ai_learning_service import AILearningService
 from app.schemas.ai_learning import (
     AILearningQuestionResponse, 
-    JobSeekerAILearningResponseCreate, 
-    JobSeekerAILearningResponseResponse
+    AILearningAnswerCreate, 
+    AILearningAnswerResponse
 )
 
 router = APIRouter()
@@ -18,32 +18,32 @@ async def get_ai_learning_questions(
     service = AILearningService(db)
     return service.get_ai_learning_questions()
 
-@router.post("/own-qnas/{user_id}/{question_id}", response_model=JobSeekerAILearningResponseResponse)
-async def create_ai_learning_response(
+@router.post("/own-qnas/{user_id}/{question_id}", response_model=AILearningAnswerResponse)
+async def create_ai_learning_answer(
     user_id: str,
     question_id: str,
-    response_data: JobSeekerAILearningResponseCreate,
+    response_data: AILearningAnswerCreate,
     db: Session = Depends(get_db)
 ):
     """지원자 질문답변 생성 - AI학습을 위한 질문답변 작성"""
     service = AILearningService(db)
-    return service.create_ai_learning_response(user_id, question_id, response_data)
+    return service.create_ai_learning_answer(user_id, question_id, response_data)
 
-@router.put("/own-qnas/{user_id}", response_model=JobSeekerAILearningResponseResponse)
-async def update_ai_learning_response(
+@router.put("/own-qnas/{user_id}", response_model=AILearningAnswerResponse)
+async def update_ai_learning_answer(
     user_id: str,
-    response_data: JobSeekerAILearningResponseCreate,
+    response_data: AILearningAnswerCreate,
     db: Session = Depends(get_db)
 ):
     """지원자 질문답변 수정 - AI학습을 위한 질문답변 수정"""
     service = AILearningService(db)
-    return service.update_ai_learning_response(user_id, response_data)
+    return service.update_ai_learning_answer(user_id, response_data)
 
-@router.get("/own-qnas/{user_id}", response_model=list[JobSeekerAILearningResponseResponse])
-async def get_user_ai_learning_responses(
+@router.get("/own-qnas/{user_id}", response_model=list[AILearningAnswerResponse])
+async def get_user_ai_learning_answers(
     user_id: str,
     db: Session = Depends(get_db)
 ):
     """지원자 AI 학습 질문답변 목록 조회"""
     service = AILearningService(db)
-    return service.get_user_ai_learning_responses(user_id)
+    return service.get_user_ai_learning_answers(user_id)

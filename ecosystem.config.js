@@ -6,7 +6,9 @@ module.exports = {
     cwd: '/mnt/hdd_sda/projects/VeriFit-Backend',
     env: {
       NODE_ENV: 'production',
-      DATABASE_URL: 'postgresql://verifit_master:verifit123@verifit-db.cpk0oamsu0g6.us-west-1.rds.amazonaws.com:5432/verifit_db'
+      DATABASE_URL: 'postgresql://verifit_master:verifit123@verifit-db.cpk0oamsu0g6.us-west-1.rds.amazonaws.com:5432/verifit_db',
+      LAMBDA_FUNCTION_URL: "https://fm32g7knrrbb226tl63rok63j40vupaa.lambda-url.us-west-1.on.aws/",
+      LAMBDA_FUNCTION_URL_AUTH: "NONE"
     },
     instances: 1,
     exec_mode: 'fork',

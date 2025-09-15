@@ -8,6 +8,8 @@
 .env.local
 .env.production
 
+ecosystem-conda.config.js
+
 # Python
 __pycache__/
 *.py[cod]

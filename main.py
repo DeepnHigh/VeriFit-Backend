@@ -24,10 +24,11 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# CORS 설정 (개발 환경용 - 모든 origin 허용)
+# CORS 설정 (환경변수로 관리)
+from app.core.config import settings
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # 개발 환경에서 모든 origin 허용
+    allow_origins=settings.cors_origins,  # 환경변수에서 CORS origins 가져오기
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

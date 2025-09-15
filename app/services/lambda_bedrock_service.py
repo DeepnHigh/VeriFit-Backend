@@ -4,6 +4,12 @@ import logging
 from typing import Dict, Any, Optional
 from app.core.config import settings
 from app.schemas.personal_info import PersonalInfo
+import urllib.request
+import urllib.error
+import botocore
+from botocore.session import get_session
+from botocore.auth import SigV4Auth
+from urllib.parse import urlparse
 
 logger = logging.getLogger(__name__)
 
@@ -19,9 +25,16 @@ class LambdaBedrockService:
         logger.info(f"🔧 Lambda Bedrock Service 초기화 - Model ID: {self.model_id}")
         logger.info(f"🔧 Lambda Bedrock Service 초기화 - Function: {self.lambda_function_name}")
         
-        # Lambda 클라이언트 초기화
-        self.lambda_client = boto3.client('lambda', region_name=self.region)
-        logger.info("✅ Lambda 클라이언트 초기화 완료")
+        # Lambda Function URL이 있으면 HTTP 경로 우선 사용
+        self.lambda_function_url: Optional[str] = getattr(settings, 'lambda_function_url', None)
+        self.lambda_function_url_auth: Optional[str] = getattr(settings, 'lambda_function_url_auth', 'NONE')
+        if self.lambda_function_url:
+            logger.info(f"🌐 Lambda Function URL 사용: {self.lambda_function_url}")
+            self.lambda_client = None
+        else:
+            # Lambda 클라이언트 초기화 (AWS 자격 증명 필요)
+            self.lambda_client = boto3.client('lambda', region_name=self.region)
+            logger.info("✅ Lambda 클라이언트 초기화 완료")
     
     async def extract_personal_info(self, extracted_text: str) -> PersonalInfo:
         """Lambda를 통해 개인정보 추출"""
@@ -36,28 +49,57 @@ class LambdaBedrockService:
                 'model_id': self.model_id
             }
             
-            logger.info(f"🚀 Lambda 함수 호출 시작...")
-            logger.info(f"🔧 Lambda 함수: {self.lambda_function_name}")
+            logger.info(f"🚀 Lambda 호출 시작...")
             
-            # Lambda 함수 호출
-            response = self.lambda_client.invoke(
-                FunctionName=self.lambda_function_name,
-                InvocationType='RequestResponse',  # 동기 호출
-                Payload=json.dumps(payload)
-            )
+            # 1) Function URL 경로
+            if self.lambda_function_url:
+                try:
+                    url = self.lambda_function_url
+                    data_bytes = json.dumps(payload).encode('utf-8')
+                    headers = {'Content-Type': 'application/json'}
+
+                    # AWS_IAM 일 경우 SigV4 서명 추가
+                    if (self.lambda_function_url_auth or '').upper() == 'AWS_IAM':
+                        parsed = urlparse(url)
+                        request = botocore.awsrequest.AWSRequest(
+                            method='POST', url=url, data=data_bytes, headers=headers
+                        )
+                        session = get_session()
+                        creds = session.get_credentials()
+                        SigV4Auth(creds, 'lambda', parsed.hostname.split('.')[2]).add_auth(request)
+                        signed_headers = dict(request.headers.items())
+                        headers.update(signed_headers)
+
+                    req = urllib.request.Request(url, data=data_bytes, headers=headers, method='POST')
+                    with urllib.request.urlopen(req, timeout=30) as resp:
+                        resp_text = resp.read().decode('utf-8')
+                        response_payload = json.loads(resp_text)
+                except urllib.error.HTTPError as e:
+                    err_body = e.read().decode('utf-8') if e.fp else ''
+                    logger.error(f"❌ Function URL HTTPError: {e.code} {err_body}")
+                    raise Exception(f"Function URL 호출 실패: {e.code} {err_body}")
+                except urllib.error.URLError as e:
+                    logger.error(f"❌ Function URL URLError: {e.reason}")
+                    raise Exception(f"Function URL 호출 실패: {e.reason}")
+            else:
+                # 2) boto3 Lambda Invoke 경로
+                logger.info(f"🔧 Lambda 함수: {self.lambda_function_name}")
+                response = self.lambda_client.invoke(
+                    FunctionName=self.lambda_function_name,
+                    InvocationType='RequestResponse',  # 동기 호출
+                    Payload=json.dumps(payload)
+                )
+                logger.info(f"✅ Lambda 함수 응답 수신")
+                response_payload = json.loads(response['Payload'].read())
             
-            logger.info(f"✅ Lambda 함수 응답 수신")
-            
-            # 응답 파싱
-            response_payload = json.loads(response['Payload'].read())
-            
-            if response['StatusCode'] != 200:
-                logger.error(f"❌ Lambda 함수 오류: {response_payload}")
-                raise Exception(f"Lambda 함수 실행 실패: {response_payload.get('error', 'Unknown error')}")
+            # Function URL의 경우 StatusCode가 없으므로 payload 기반 판정
+            if not response_payload.get('success', False) and response_payload.get('statusCode') not in (200, None):
+                logger.error(f"❌ Lambda 호출 오류: {response_payload}")
+                raise Exception(f"Lambda 실행 실패: {response_payload}")
             
             if not response_payload.get('success', False):
-                logger.error(f"❌ Lambda 함수 처리 실패: {response_payload}")
-                raise Exception(f"Lambda 함수 처리 실패: {response_payload.get('error', 'Unknown error')}")
+                logger.error(f"❌ Lambda 처리 실패: {response_payload}")
+                raise Exception(f"Lambda 처리 실패: {response_payload.get('error', 'Unknown error')}")
             
             # 개인정보 데이터 추출
             personal_info_data = response_payload.get('personal_info', {})

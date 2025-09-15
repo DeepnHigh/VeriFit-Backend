@@ -8,62 +8,43 @@ from typing import Dict, Any
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
+# 성공 케이스와 동일하게: 모델이 실제로 있는 us-east-1에 고정
+bedrock_client = boto3.client('bedrock-runtime', region_name='us-east-1')
+
 def lambda_handler(event, context):
     """
     AWS Lambda 함수: Bedrock을 통한 개인정보 추출
     """
     try:
-        # 입력 데이터 파싱
-        extracted_text = event.get('extracted_text', '')
-        # model_id는 환경 변수에서 가져오므로 event에서 제거
+        # 입력 데이터 파싱 (API Gateway/Lambda URL 양쪽 호환)
+        if 'body' in event:
+            body_data = json.loads(event.get('body', '{}'))
+            extracted_text = body_data.get('extracted_text', '')
+        else:
+            extracted_text = event.get('extracted_text', '')
         
         if not extracted_text:
             return {
                 'statusCode': 400,
-                'body': json.dumps({
-                    'error': 'extracted_text is required'
-                })
+                'body': json.dumps({'error': 'extracted_text is required'}, ensure_ascii=False)
             }
         
         logger.info(f"Lambda 시작 - 텍스트 길이: {len(extracted_text)}")
         
-        # 환경 변수에서 설정 가져오기 (없으면 기본값 사용)
-        region = os.environ.get('AWS_REGION', 'us-west-1')
-        # 교차 리전 추론이 가능한 Claude 3.5 Sonnet 모델 사용
-        model_id = os.environ.get('BEDROCK_MODEL_ID', 'anthropic.claude-3-5-sonnet-20241022-v2:0')
-        
-        # Bedrock 클라이언트 초기화
-        bedrock_client = boto3.client('bedrock-runtime', region_name=region)
+        # 성공 사례와 동일한 표준 모델 ID 사용
+        model_id = 'anthropic.claude-3-5-sonnet-20240620-v1:0'
         
         # 프롬프트 생성
         prompt = create_prompt(extracted_text)
         
-        # Bedrock API 요청 (Amazon Nova 모델용)
-        if model_id.startswith('amazon.nova'):
-            body = {
-                "messages": [
-                    {
-                        "role": "user",
-                        "content": prompt
-                    }
-                ],
-                "max_tokens": 1000,
-                "temperature": 0.1
-            }
-        else:
-            # Claude 모델용
-            body = {
-                "anthropic_version": "bedrock-2023-05-31",
-                "max_tokens": 1000,
-                "messages": [
-                    {
-                        "role": "user",
-                        "content": prompt
-                    }
-                ]
-            }
+        # Bedrock API 요청 (Anthropic 메시지 포맷)
+        body = {
+            "anthropic_version": "bedrock-2023-05-31",
+            "max_tokens": 1000,
+            "messages": [{"role": "user", "content": [{"type": "text", "text": prompt}]}]
+        }
         
-        logger.info(f"Bedrock API 요청 시작 - Model: {model_id}, Region: {region}")
+        logger.info(f"Bedrock API 요청 시작 - Model: {model_id}, Region: us-east-1")
         
         response = bedrock_client.invoke_model(
             modelId=model_id,
@@ -74,12 +55,7 @@ def lambda_handler(event, context):
         logger.info("Bedrock API 응답 수신")
         
         response_body = json.loads(response['body'].read())
-        
-        # Amazon Nova와 Claude 모델의 응답 형식이 다름
-        if model_id.startswith('amazon.nova'):
-            content = response_body['output']['message']['content'][0]['text']
-        else:
-            content = response_body['content'][0]['text']
+        content = response_body['content'][0]['text']
         
         logger.info(f"LLM 응답 길이: {len(content)}")
         
@@ -90,21 +66,14 @@ def lambda_handler(event, context):
         
         return {
             'statusCode': 200,
-            'body': json.dumps({
-                'success': True,
-                'personal_info': personal_info,
-                'raw_response': content
-            })
+            'body': json.dumps({'success': True, 'personal_info': personal_info, 'raw_response': content}, ensure_ascii=False)
         }
         
     except Exception as e:
         logger.error(f"Lambda 오류: {str(e)}")
         return {
             'statusCode': 500,
-            'body': json.dumps({
-                'success': False,
-                'error': str(e)
-            })
+            'body': json.dumps({'success': False, 'error': str(e)}, ensure_ascii=False)
         }
 
 def create_prompt(extracted_text: str) -> str:

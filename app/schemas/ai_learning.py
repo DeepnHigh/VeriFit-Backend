@@ -1,6 +1,8 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+from pydantic.config import ConfigDict
 from typing import Optional
 from datetime import datetime
+from uuid import UUID
 
 class AILearningQuestionBase(BaseModel):
     question_text: str
@@ -10,25 +12,25 @@ class AILearningQuestionCreate(AILearningQuestionBase):
     pass
 
 class AILearningQuestionResponse(AILearningQuestionBase):
-    id: str
+    id: UUID
     
     class Config:
         from_attributes = True
 
-class JobSeekerAILearningResponseBase(BaseModel):
+class AILearningAnswerBase(BaseModel):
     answer: str
 
-class JobSeekerAILearningResponseCreate(JobSeekerAILearningResponseBase):
+class AILearningAnswerCreate(AILearningAnswerBase):
     pass
 
-class JobSeekerAILearningResponseResponse(JobSeekerAILearningResponseBase):
-    id: str
-    job_seeker_id: str
-    question_id: str
+class AILearningAnswerResponse(BaseModel):
+    id: UUID
+    job_seeker_id: UUID
+    question_id: UUID
+    answer: str = Field(validation_alias="answer_text", serialization_alias="answer")
     response_date: datetime
-    
-    class Config:
-        from_attributes = True
+
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 class JobSeekerAIAgentBase(BaseModel):
     ai_agent_completion_percentage: float = 0.0

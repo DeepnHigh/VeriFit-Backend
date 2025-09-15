@@ -42,4 +42,4 @@ class JobSeeker(Base):
     documents = relationship("JobSeekerDocument", back_populates="job_seeker")
     ai_agent = relationship("JobSeekerAIAgent", back_populates="job_seeker", uselist=False)
     big5_test_results = relationship("Big5TestResult", back_populates="job_seeker")
-    ai_learning_responses = relationship("JobSeekerAILearningResponse", back_populates="job_seeker")
+    ai_learning_answers = relationship("AILearningAnswer", back_populates="job_seeker")

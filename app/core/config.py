@@ -30,6 +30,12 @@ class Settings(BaseSettings):
     # AWS Lambda 설정
     lambda_function_name: str = Field(default="basic_info_extraction", alias="LAMBDA_FUNCTION_NAME")
     
+    # API 베이스 URL 설정
+    api_base_url: str = Field(default="http://localhost:8000", alias="API_BASE_URL")
+    
+    # CORS 설정
+    cors_origins: list = Field(default=["*"], alias="CORS_ORIGINS")
+    
     class Config:
         env_file = ".env"
 

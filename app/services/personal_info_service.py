@@ -149,12 +149,15 @@ class PersonalInfoService:
     
     def _get_local_file_path(self, file_url: str) -> str:
         """파일 URL에서 로컬 파일 경로 생성"""
+        from app.core.config import settings
+        
         # URL에서 파일 경로 추출
-        # 예: http://localhost:8000/files/user_id/document_type/filename
+        # 예: {api_base_url}/files/user_id/document_type/filename
         # -> uploads/user_id/document_type/filename
         
-        if "localhost:8000/files/" in file_url:
-            relative_path = file_url.split("localhost:8000/files/")[1]
+        files_path = f"{settings.api_base_url}/files/"
+        if files_path in file_url:
+            relative_path = file_url.split(files_path)[1]
             return os.path.join("uploads", relative_path)
         else:
             # 다른 URL 형식 처리

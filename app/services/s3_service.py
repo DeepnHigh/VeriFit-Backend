@@ -56,7 +56,8 @@ class S3Service:
             await file.seek(0)
             
             # URL 생성 (로컬 서버 기준)
-            file_url = f"http://localhost:8000/files/{user_id}/{document_type}/{unique_filename}"
+            from app.core.config import settings
+            file_url = f"{settings.api_base_url}/files/{user_id}/{document_type}/{unique_filename}"
             
             return {
                 "success": True,

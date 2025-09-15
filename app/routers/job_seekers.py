@@ -71,7 +71,7 @@ async def get_applicant_mypage(
         
         # 추가 관련 데이터
         'big5_test_results': mypage_data['big5_test_results'],
-        'ai_learning_responses': mypage_data['ai_learning_responses'],
+        'ai_learning_answers': mypage_data['ai_learning_answers'],
         'documents': mypage_data['documents']
     }
     

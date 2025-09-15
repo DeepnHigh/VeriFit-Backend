@@ -2,12 +2,12 @@ from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 import uuid
 from app.models.ai_learning_question import AILearningQuestion
-from app.models.job_seeker_ai_learning_response import JobSeekerAILearningResponse
+from app.models.ai_learning_answer import AILearningAnswer
 from app.models.job_seeker import JobSeeker
 from app.schemas.ai_learning import (
     AILearningQuestionCreate, 
     AILearningQuestionResponse,
-    JobSeekerAILearningResponseCreate
+    AILearningAnswerCreate
 )
 from typing import List, Optional
 import uuid
@@ -45,12 +45,12 @@ class AILearningService:
             for question in questions
         ]
 
-    def create_ai_learning_response(
+    def create_ai_learning_answer(
         self, 
         user_id: str, 
         question_id: str, 
-        response_data: JobSeekerAILearningResponseCreate
-    ) -> JobSeekerAILearningResponse:
+        response_data: AILearningAnswerCreate
+    ) -> AILearningAnswer:
         """지원자 질문답변 생성"""
         job_seeker_id = self._resolve_job_seeker_id(user_id)
         try:
@@ -58,7 +58,7 @@ class AILearningService:
         except Exception:
             raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Invalid question_id UUID format")
 
-        db_response = JobSeekerAILearningResponse(
+        db_response = AILearningAnswer(
             job_seeker_id=job_seeker_id,
             question_id=question_uuid,
             answer_text=response_data.answer
@@ -70,30 +70,30 @@ class AILearningService:
         
         return db_response
 
-    def update_ai_learning_response(
+    def update_ai_learning_answer(
         self, 
         user_id: str, 
-        response_data: JobSeekerAILearningResponseCreate
-    ) -> JobSeekerAILearningResponse:
+        response_data: AILearningAnswerCreate
+    ) -> AILearningAnswer:
         """지원자 질문답변 수정"""
         job_seeker_id = self._resolve_job_seeker_id(user_id)
 
         # 기존 응답 찾기 (가장 최근 것)
-        existing_response = self.db.query(JobSeekerAILearningResponse).filter(
-            JobSeekerAILearningResponse.job_seeker_id == job_seeker_id
-        ).order_by(JobSeekerAILearningResponse.response_date.desc()).first()
+        existing_answer = self.db.query(AILearningAnswer).filter(
+            AILearningAnswer.job_seeker_id == job_seeker_id
+        ).order_by(AILearningAnswer.response_date.desc()).first()
 
-        if existing_response is None:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No existing response to update")
+        if existing_answer is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No existing answer to update")
 
-        existing_response.answer_text = response_data.answer
+        existing_answer.answer_text = response_data.answer
         self.db.commit()
-        self.db.refresh(existing_response)
-        return existing_response
+        self.db.refresh(existing_answer)
+        return existing_answer
 
-    def get_user_ai_learning_responses(self, user_id: str) -> List[JobSeekerAILearningResponse]:
+    def get_user_ai_learning_answers(self, user_id: str) -> List[AILearningAnswer]:
         """지원자 AI 학습 질문답변 목록 조회"""
         job_seeker_id = self._resolve_job_seeker_id(user_id)
-        return self.db.query(JobSeekerAILearningResponse).filter(
-            JobSeekerAILearningResponse.job_seeker_id == job_seeker_id
-        ).order_by(JobSeekerAILearningResponse.response_date.desc()).all()
+        return self.db.query(AILearningAnswer).filter(
+            AILearningAnswer.job_seeker_id == job_seeker_id
+        ).order_by(AILearningAnswer.response_date.desc()).all()

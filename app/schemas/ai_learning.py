@@ -17,13 +17,13 @@ class AILearningQuestionResponse(AILearningQuestionBase):
     class Config:
         from_attributes = True
 
-class JobSeekerAILearningResponseBase(BaseModel):
+class AILearningAnswerBase(BaseModel):
     answer: str
 
-class JobSeekerAILearningResponseCreate(JobSeekerAILearningResponseBase):
+class AILearningAnswerCreate(AILearningAnswerBase):
     pass
 
-class JobSeekerAILearningResponseResponse(BaseModel):
+class AILearningAnswerResponse(BaseModel):
     id: UUID
     job_seeker_id: UUID
     question_id: UUID

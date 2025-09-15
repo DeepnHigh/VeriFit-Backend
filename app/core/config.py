@@ -1,6 +1,8 @@
 from pydantic_settings import BaseSettings
-from pydantic import Field
 from typing import Optional, List
+from pydantic import Field, model_validator
+from typing import Optional
+import json
 
 class Settings(BaseSettings):
     
@@ -40,10 +42,27 @@ class Settings(BaseSettings):
     
     # AWS Lambda 설정
     lambda_function_name: str = Field(default="basic_info_extraction", alias="LAMBDA_FUNCTION_NAME")
+
     # 선택: Lambda Function URL 호출 지원
     lambda_function_url: Optional[str] = Field(default=None, alias="LAMBDA_FUNCTION_URL")
     # Function URL 인증 방식: NONE 또는 AWS_IAM
     lambda_function_url_auth: Optional[str] = Field(default="NONE", alias="LAMBDA_FUNCTION_URL_AUTH")
+
+
+    @model_validator(mode="after")
+    def _normalize_cors_origins(self):
+        """환경변수로 전달된 CORS_ORIGINS가 문자열(JSON)일 경우 리스트로 파싱"""
+        origins = self.cors_origins
+        if isinstance(origins, str):
+            try:
+                parsed = json.loads(origins)
+                if isinstance(parsed, list):
+                    self.cors_origins = parsed
+            except Exception:
+                # 쉼표 구분 문자열일 수도 있으니 분리 시도
+                self.cors_origins = [o.strip() for o in origins.split(",") if o.strip()]
+        return self
+
     
     class Config:
         env_file = ".env"

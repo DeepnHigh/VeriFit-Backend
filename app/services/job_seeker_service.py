@@ -2,7 +2,7 @@ from sqlalchemy.orm import Session, joinedload
 from fastapi import UploadFile, HTTPException, status
 from app.models.job_seeker import JobSeeker
 from app.models.big5_test_result import Big5TestResult
-from app.models.job_seeker_ai_learning_response import JobSeekerAILearningResponse
+from app.models.ai_learning_answer import AILearningAnswer
 from app.models.ai_learning_question import AILearningQuestion
 from app.models.job_seeker_document import JobSeekerDocument
 from app.services.s3_service import S3Service
@@ -80,10 +80,10 @@ class JobSeekerService:
         ).all()
         
         # 3. AI 학습 응답 조회 (질문 정보 포함)
-        ai_responses = self.db.query(JobSeekerAILearningResponse).options(
-            joinedload(JobSeekerAILearningResponse.question)
+        ai_learning_answers = self.db.query(AILearningAnswer).options(
+            joinedload(AILearningAnswer.question)
         ).filter(
-            JobSeekerAILearningResponse.job_seeker_id == job_seeker.id
+            AILearningAnswer.job_seeker_id == job_seeker.id
         ).all()
         
         # 4. 문서 조회
@@ -95,7 +95,7 @@ class JobSeekerService:
         return {
             'job_seeker': job_seeker,
             'big5_test_results': big5_results,
-            'ai_learning_responses': ai_responses,
+            'ai_learning_answers': ai_learning_answers,
             'documents': documents
         }
     

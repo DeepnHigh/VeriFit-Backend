@@ -102,7 +102,7 @@ class AILearningQuestionForMyPage(BaseModel):
         from_attributes = True
 
 # AI 학습 응답 스키마 (질문 포함)
-class AILearningResponseForMyPage(BaseModel):
+class AILearningAnswerForMyPage(BaseModel):
     id: uuid.UUID
     answer_text: str
     response_date: datetime
@@ -131,7 +131,7 @@ class JobSeekerMyPageResponse(JobSeekerBase):
     
     # 추가 관련 데이터
     big5_test_results: List[Big5TestResultForMyPage] = []
-    ai_learning_responses: List[AILearningResponseForMyPage] = []
+    ai_learning_answers: List[AILearningAnswerForMyPage] = []
     documents: List[JobSeekerDocumentResponse] = []
     
     class Config:

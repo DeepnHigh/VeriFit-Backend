@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from typing import Optional, Dict, Any
+from uuid import UUID
 from datetime import datetime
 from decimal import Decimal
 
@@ -33,9 +34,33 @@ class Big5TestResultCreate(Big5TestResultBase):
     job_seeker_id: str
 
 class Big5TestResultResponse(Big5TestResultBase):
-    id: str
-    job_seeker_id: str
+    id: UUID
+    job_seeker_id: UUID
     test_date: datetime
     
     class Config:
         from_attributes = True
+
+
+class Big5TestResultUpdate(BaseModel):
+    # 업데이트는 부분 업데이트를 허용
+    openness_score: Optional[Decimal] = None
+    conscientiousness_score: Optional[Decimal] = None
+    extraversion_score: Optional[Decimal] = None
+    agreeableness_score: Optional[Decimal] = None
+    neuroticism_score: Optional[Decimal] = None
+
+    openness_level: Optional[str] = None
+    conscientiousness_level: Optional[str] = None
+    extraversion_level: Optional[str] = None
+    agreeableness_level: Optional[str] = None
+    neuroticism_level: Optional[str] = None
+
+    openness_facets: Optional[Dict[str, Any]] = None
+    conscientiousness_facets: Optional[Dict[str, Any]] = None
+    extraversion_facets: Optional[Dict[str, Any]] = None
+    agreeableness_facets: Optional[Dict[str, Any]] = None
+    neuroticism_facets: Optional[Dict[str, Any]] = None
+
+    interpretations: Optional[Dict[str, Any]] = None
+    raw_scores: Optional[Dict[str, Any]] = None

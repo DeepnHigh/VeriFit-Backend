@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from app.routers import (
@@ -50,6 +50,7 @@ app.mount("/files", StaticFiles(directory="uploads"), name="files")
 @app.get("/")
 async def root():
     return {"message": "VeriFit API 서버가 실행 중입니다!"}
+
 
 @app.get("/health")
 async def health_check():

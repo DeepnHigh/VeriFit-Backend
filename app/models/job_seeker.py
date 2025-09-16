@@ -35,6 +35,7 @@ class JobSeeker(Base):
     last_profile_update = Column(DateTime(timezone=True))  # 마지막 프로필 업데이트
     is_profile_public = Column(Boolean, default=True)  # 프로필 공개 여부
     created_at = Column(DateTime(timezone=True), server_default=func.now())  # 생성일시
+    full_text = Column(Text)  # 전체 텍스트(LLM/검색용)
     
     # 관계 설정
     user = relationship("User", back_populates="job_seeker")

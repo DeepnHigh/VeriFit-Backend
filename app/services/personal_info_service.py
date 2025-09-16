@@ -47,7 +47,7 @@ class PersonalInfoService:
             
             logger.info(f"📁 발견된 문서 수: {len(documents)}")
             for doc in documents:
-                logger.info(f"📄 문서: {doc.file_name} (타입: {doc.document_type}, MIME: {doc.mime_type})")
+                logger.info(f"📄 문서: {doc.file_name} (타입: {doc.document_type}, MIME: {doc.mime_type}, URL: {doc.file_url})")
             
             if not documents:
                 return PersonalInfoResponse(
@@ -75,6 +75,9 @@ class PersonalInfoService:
                         
                         # 파일 타입에 따라 적절한 OCR 메서드 호출
                         extracted_text = None
+                        logger.info(f"🔍 파일 정보 - 이름: {doc.file_name}, MIME: {doc.mime_type}, 타입: {doc.document_type}")
+                        logger.info(f"파일 타입: {type(doc.mime_type)}, {type(doc.document_type)}")
+                        logger.info(f"파일 내용: {doc.mime_type}, {doc.document_type}")
                         if doc.mime_type == "application/pdf":
                             logger.info(f"📄 PDF 파일 처리: {doc.file_name}")
                             extracted_text = await self.ocr_service.extract_text_from_pdf(file_path)
@@ -87,7 +90,9 @@ class PersonalInfoService:
                             with open(file_path, "r", encoding="utf-8") as f:
                                 extracted_text = f.read()
                         else:
-                            logger.warning(f"⚠️ 지원되지 않는 파일 타입: {doc.mime_type}")
+                            logger.warning(f"⚠️ 지원되지 않는 파일 타입: {doc.mime_type} - 기본적으로 이미지로 처리 시도")
+                            # MIME 타입이 명확하지 않은 경우 이미지로 처리 시도
+                            extracted_text = await self.ocr_service.extract_text_from_image(file_path)
                         
                         if extracted_text:
                             all_text.append(extracted_text)
@@ -117,11 +122,73 @@ class PersonalInfoService:
             logger.info(f"📝 전체 텍스트 결합 완료 - 총 길이: {len(combined_text)} 문자")
             logger.info(f"📝 결합된 텍스트 미리보기 (처음 200자): {combined_text[:200]}...")
             
-            # 5. AWS Bedrock으로 개인정보 추출
+            # 4-1. 결합된 전체 텍스트를 DB(job_seekers.full_text)에 저장
+            try:
+                job_seeker.full_text = combined_text
+                self.db.add(job_seeker)
+                self.db.commit()
+                logger.info("💾 job_seekers.full_text 저장 완료")
+            except Exception as e:
+                logger.error(f"❌ full_text 저장 실패: {e}")
+                self.db.rollback()
+            
+            # 5. AWS Lambda(Bedrock)으로 개인정보 추출
             logger.info(f"🤖 LLM 개인정보 추출 시작...")
             personal_info = await self.bedrock_service.extract_personal_info(combined_text)
             logger.info(f"🎉 LLM 개인정보 추출 완료!")
             logger.info(f"📊 최종 추출 결과: {personal_info}")
+
+            # 5-1. LLM 결과를 job_seekers 테이블에 반영
+            try:
+                # personal_info는 Pydantic 모델 또는 dict 호환
+                pi = personal_info if isinstance(personal_info, dict) else personal_info.model_dump()
+                # None이 아닌 값만 업데이트
+                if pi.get('full_name') is not None:
+                    job_seeker.full_name = pi['full_name']
+                if pi.get('phone') is not None:
+                    job_seeker.phone = pi['phone']
+                if pi.get('email') is not None:
+                    job_seeker.email = pi['email']
+                if pi.get('education_level') is not None:
+                    # 한글 학력명을 내부 enum 값으로 매핑
+                    edu_raw = (pi['education_level'] or '').strip().lower()
+                    edu_map = {
+                        '고졸': 'high_school',
+                        '고등학교': 'high_school',
+                        '전문학사': 'associate',
+                        '학사': 'bachelor',
+                        '석사': 'master',
+                        '박사': 'phd'
+                    }
+                    # 이미 영문 enum 값이 들어오는 경우도 허용
+                    normalized = edu_map.get(edu_raw, edu_raw)
+                    job_seeker.education_level = normalized if normalized in (
+                        'high_school','associate','bachelor','master','phd'
+                    ) else None
+                if pi.get('university') is not None:
+                    job_seeker.university = pi['university']
+                if pi.get('major') is not None:
+                    job_seeker.major = pi['major']
+                if pi.get('graduation_year') is not None:
+                    # 숫자 변환 시도
+                    try:
+                        job_seeker.graduation_year = int(pi['graduation_year']) if pi['graduation_year'] is not None else None
+                    except Exception:
+                        pass
+                if pi.get('total_experience_years') is not None:
+                    try:
+                        job_seeker.total_experience_years = int(pi['total_experience_years'])
+                    except Exception:
+                        pass
+                if pi.get('company_name') is not None:
+                    job_seeker.company_name = pi['company_name']
+
+                self.db.add(job_seeker)
+                self.db.commit()
+                logger.info("💾 job_seekers 프로필 필드 업데이트 완료")
+            except Exception as e:
+                logger.error(f"❌ job_seekers 업데이트 실패: {e}")
+                self.db.rollback()
             
             return PersonalInfoResponse(
                 success=True,

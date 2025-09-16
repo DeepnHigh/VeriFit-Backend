@@ -56,7 +56,19 @@ def deploy_lambda(function_name: str, zip_file: str, handler: str, description: 
                 ZipFile=zip_file_obj.read()
             )
         
-        print("✅ Lambda 함수 업데이트 완료")
+        print("✅ Lambda 함수 코드 업데이트 완료")
+
+        # 기존 함수도 타임아웃/메모리/환경변수 갱신
+        lambda_client.update_function_configuration(
+            FunctionName=function_name,
+            Timeout=120,            # 최소 120초 권장
+            MemorySize=1024,        # 1024MB 권장
+            Environment={'Variables': {
+                'AWS_REGION': 'us-east-1',
+                'BEDROCK_MODEL_ID': 'anthropic.claude-3-5-sonnet-20240620-v1:0'
+            }}
+        )
+        print("✅ Lambda 함수 구성(타임아웃/메모리/환경변수) 업데이트 완료")
         
     except lambda_client.exceptions.ResourceNotFoundException:
         print(f"🆕 새 함수 생성: {function_name}")
@@ -70,24 +82,13 @@ def deploy_lambda(function_name: str, zip_file: str, handler: str, description: 
                 Handler=handler,
                 Code={'ZipFile': zip_file_obj.read()},
                 Description=description,
-                Timeout=300,  # OCR 처리를 위해 타임아웃 증가
+                Timeout=120,  # 초기 타임아웃 설정
                 MemorySize=1024  # 메모리 증가
             )
         
         print("✅ Lambda 함수 생성 완료")
     
-    # 환경 변수 설정
-    env_vars = {
-        'AWS_REGION': 'us-east-1',
-        'BEDROCK_MODEL_ID': 'anthropic.claude-3-5-sonnet-20240620-v1:0'
-    }
-    
-    lambda_client.update_function_configuration(
-        FunctionName=function_name,
-        Environment={'Variables': env_vars}
-    )
-    
-    print("✅ 환경 변수 설정 완료")
+    print("ℹ️ 구성 업데이트 완료")
 
 def create_iam_role():
     """Lambda용 IAM Role 생성 (수동으로 실행 필요)"""

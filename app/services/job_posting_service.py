@@ -1,23 +1,171 @@
 from sqlalchemy.orm import Session
+from datetime import datetime
+import json
+from typing import Optional, Any, Dict
+
+from app.models.job_posting import JobPosting
 
 class JobPostingService:
     def __init__(self, db: Session):
         self.db = db
     
-    def get_job_postings(self):
-        """채용공고 목록 조회"""
-        # TODO: JobPosting 모델 구현 후 실제 데이터 조회
-        return {"job_postings": []}
+    def get_job_postings(self, company_id) -> Dict[str, Any]:
+        """채용공고 목록 조회 (회사별)"""
+        postings = (
+            self.db.query(JobPosting)
+            .filter(JobPosting.company_id == company_id)
+            .order_by(JobPosting.created_at.desc())
+            .all()
+        )
+
+        result = []
+        for p in postings:
+            result.append({
+                "id": str(p.id),
+                "title": p.title,
+                "employment_type": p.employment_type,
+                "position_level": p.position_level,
+                "salary_min": p.salary_min,
+                "salary_max": p.salary_max,
+                "is_active": p.is_active,
+                "created_at": p.created_at.isoformat() if p.created_at else None,
+                "application_deadline": p.application_deadline.isoformat() if p.application_deadline else None,
+            })
+
+        return {"job_postings": result}
     
-    def create_job_posting(self, posting_data: dict):
-        """채용공고 생성"""
-        # TODO: JobPosting 모델 구현 후 실제 생성 로직
-        return {"message": "채용공고가 생성되었습니다", "data": posting_data}
+    def create_job_posting(self, posting_data: Dict[str, Any], company_id) -> Dict[str, Any]:
+        """채용공고 생성 및 저장"""
+        # 필드 매핑 및 전처리
+        title = posting_data.get("title")
+        main_tasks = posting_data.get("main_tasks")
+
+        # requirements: list[str] -> Text(JSON 문자열)로 저장
+        requirements_value = posting_data.get("requirements")
+        if isinstance(requirements_value, list):
+            requirements_text: Optional[str] = json.dumps(requirements_value, ensure_ascii=False)
+        elif isinstance(requirements_value, str):
+            requirements_text = requirements_value
+        else:
+            requirements_text = None
+
+        # status: 'active' | 'inactive' -> is_active: bool
+        status_value = (posting_data.get("status") or "active").lower()
+        is_active = status_value == "active"
+
+        # application_deadline: 'YYYY-MM-DD' -> date
+        raw_deadline = posting_data.get("application_deadline")
+        application_deadline = None
+        if isinstance(raw_deadline, str) and raw_deadline:
+            try:
+                application_deadline = datetime.strptime(raw_deadline, "%Y-%m-%d").date()
+            except ValueError:
+                application_deadline = None
+
+        # ai_criteria 처리
+        ai_criteria = posting_data.get("ai_criteria") or {}
+        hard_skills_value = ai_criteria.get("hard_skills") if isinstance(ai_criteria, dict) else None
+        soft_skills_value = ai_criteria.get("soft_skills") if isinstance(ai_criteria, dict) else None
+
+        job_posting = JobPosting(
+            company_id=company_id,
+            title=title,
+            position_level=posting_data.get("position_level"),
+            employment_type=posting_data.get("employment_type"),
+            location=posting_data.get("location"),
+            salary_min=posting_data.get("salary_min"),
+            salary_max=posting_data.get("salary_max"),
+            main_tasks=main_tasks,
+            requirements=requirements_text,
+            preferred=posting_data.get("preferred"),
+            application_deadline=application_deadline,
+            is_active=is_active,
+            hard_skills=hard_skills_value if isinstance(hard_skills_value, list) else None,
+            soft_skills=soft_skills_value if isinstance(soft_skills_value, list) else None,
+        )
+
+        self.db.add(job_posting)
+        self.db.commit()
+        self.db.refresh(job_posting)
+
+        # 응답 데이터 구성 (requirements는 리스트로 복원)
+        response_requirements = []
+        if isinstance(requirements_value, list):
+            response_requirements = requirements_value
+        elif isinstance(requirements_text, str):
+            try:
+                parsed = json.loads(requirements_text)
+                if isinstance(parsed, list):
+                    response_requirements = parsed
+            except json.JSONDecodeError:
+                response_requirements = [requirements_text]
+
+        return {
+            "id": str(job_posting.id),
+            "company_id": str(job_posting.company_id),
+            "title": job_posting.title,
+            "position_level": job_posting.position_level,
+            "employment_type": job_posting.employment_type,
+            "location": job_posting.location,
+            "salary_min": job_posting.salary_min,
+            "salary_max": job_posting.salary_max,
+            "main_tasks": job_posting.main_tasks,
+            "requirements": response_requirements,
+            "preferred": job_posting.preferred,
+            "application_deadline": job_posting.application_deadline.isoformat() if job_posting.application_deadline else None,
+            "is_active": job_posting.is_active,
+            "status": "active" if job_posting.is_active else "inactive",
+            "created_at": job_posting.created_at.isoformat() if job_posting.created_at else None,
+            "updated_at": job_posting.updated_at.isoformat() if job_posting.updated_at else None,
+            "ai_criteria": {
+                "hard_skills": job_posting.hard_skills or [],
+                "soft_skills": job_posting.soft_skills or [],
+            },
+        }
     
-    def get_job_posting(self, job_posting_id: int):
-        """채용공고 상세 조회"""
-        # TODO: JobPosting 모델 구현 후 실제 조회 로직
-        return {"job_posting_id": job_posting_id, "data": {}}
+    def get_job_posting(self, job_posting_id: str):
+        """채용공고 상세 조회 (모든 컬럼 반환)"""
+        posting = self.db.query(JobPosting).filter(JobPosting.id == job_posting_id).first()
+        if not posting:
+            return {
+                "error": "not_found",
+                "message": "채용공고를 찾을 수 없습니다",
+            }
+
+        # requirements 역직렬화
+        requirements_list = []
+        if isinstance(posting.requirements, str) and posting.requirements:
+            try:
+                parsed = json.loads(posting.requirements)
+                if isinstance(parsed, list):
+                    requirements_list = parsed
+                else:
+                    requirements_list = [posting.requirements]
+            except json.JSONDecodeError:
+                requirements_list = [posting.requirements]
+
+        return {
+            "id": str(posting.id),
+            "company_id": str(posting.company_id),
+            "title": posting.title,
+            "position_level": posting.position_level,
+            "employment_type": posting.employment_type,
+            "location": posting.location,
+            "salary_min": posting.salary_min,
+            "salary_max": posting.salary_max,
+            "main_tasks": posting.main_tasks,
+            "requirements": requirements_list,
+            "preferred": posting.preferred,
+            "application_deadline": posting.application_deadline.isoformat() if posting.application_deadline else None,
+            "is_active": posting.is_active,
+            "status": "active" if posting.is_active else "inactive",
+            "created_at": posting.created_at.isoformat() if posting.created_at else None,
+            "updated_at": posting.updated_at.isoformat() if posting.updated_at else None,
+            "ai_criteria": {
+                "hard_skills": posting.hard_skills or [],
+                "soft_skills": posting.soft_skills or [],
+            },
+        }
     
     def close_job_posting(self, job_posting_id: int):
         """채용공고 마감"""

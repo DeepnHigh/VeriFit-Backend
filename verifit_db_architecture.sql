@@ -217,6 +217,8 @@ Table job_postings {
   requirements text
   preferred text
   application_deadline date
+  hard_skills jsonb
+  soft_skills jsonb
   is_active boolean [default: true]
   created_at timestamp [default: `now()`]
   updated_at timestamp [default: `now()`]

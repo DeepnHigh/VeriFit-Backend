@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from app.database.database import get_db
 from app.schemas.user import UserCreate, UserResponse, UserLogin
 from app.services.auth_service import AuthService
+from app.models.company import Company
 from app.core.security import create_access_token
 
 router = APIRouter()
@@ -24,10 +25,16 @@ async def login(
         )
     
     access_token = create_access_token(data={"sub": user.email})
+    company_name = None
+    if user.user_type == "company":
+        company = db.query(Company).filter(Company.user_id == user.id).first()
+        if company:
+            company_name = company.company_name
     return {
         "access_token": access_token,
         "token_type": "bearer",
-        "user": UserResponse.model_validate(user)
+        "user": UserResponse.model_validate(user),
+        "company_name": company_name
     }
 
 @router.post("/register", response_model=UserResponse)

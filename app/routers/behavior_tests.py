@@ -1,25 +1,26 @@
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Body
 from sqlalchemy.orm import Session
 from app.database.database import get_db
 from app.services.behavior_test_service import BehaviorTestService
 
 router = APIRouter()
 
-@router.post("/behaviors/{user_id}")
-async def submit_behavior_test(
+@router.post("/behavior/save/{user_id}")
+async def save_behavior_text(
     user_id: str,
-    file: UploadFile = File(...),
+    payload: dict = Body(...),
     db: Session = Depends(get_db)
 ):
-    """지원자 행동검사 제출 - 파일을 받아 지원자DB 저장"""
+    """behavior_text를 job_seekers.behavior_text에 저장"""
+    behavior_text = payload.get("behavior_text", "")
     service = BehaviorTestService(db)
-    return service.submit_behavior_test(user_id, file)
+    return service.save_behavior_text(user_id, behavior_text)
 
-@router.get("/behaviors/{user_id}")
-async def get_behavior_test_result(
+@router.get("/behavior/{user_id}")
+async def get_behavior_text(
     user_id: str,
     db: Session = Depends(get_db)
 ):
-    """지원자 행동검사 결과 조회"""
+    """behavior_text 조회"""
     service = BehaviorTestService(db)
-    return service.get_behavior_test_result(user_id)
+    return service.get_behavior_text(user_id)

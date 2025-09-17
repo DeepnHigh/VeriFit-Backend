@@ -25,7 +25,8 @@ class Settings(BaseSettings):
     cors_origins: List[str] = Field(default=[
         "http://localhost:3000",
         "http://127.0.0.1:3000",
-        "http://192.168.0.21:3000"
+        "http://192.168.0.21:3000",
+        "http://14.39.95.228:3000"
     ], alias="CORS_ORIGINS")
 
     # AWS S3 설정 (URL 기반)

@@ -74,10 +74,10 @@ class JobSeekerService:
         if not job_seeker:
             return None
         
-        # 2. Big5 성격검사 결과 조회
-        big5_results = self.db.query(Big5TestResult).filter(
+        # 2. Big5 성격검사 결과 조회 - 최신 1건만
+        big5_latest = self.db.query(Big5TestResult).filter(
             Big5TestResult.job_seeker_id == job_seeker.id
-        ).all()
+        ).order_by(Big5TestResult.test_date.desc()).first()
         
         # 3. AI 학습 응답 조회 (질문 정보 포함)
         ai_learning_answers = self.db.query(AILearningAnswer).options(
@@ -94,7 +94,7 @@ class JobSeekerService:
         # 결과를 딕셔너리로 구성
         return {
             'job_seeker': job_seeker,
-            'big5_test_results': big5_results,
+            'big5_test_results': [big5_latest] if big5_latest else [],
             'ai_learning_answers': ai_learning_answers,
             'documents': documents
         }

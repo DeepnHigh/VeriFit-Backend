@@ -1,4 +1,5 @@
 from sqlalchemy import Column, String, Text, DateTime, ForeignKey, Integer, Boolean, Enum, Date
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
@@ -20,6 +21,8 @@ class JobPosting(Base):
     requirements = Column(Text)
     preferred = Column(Text)
     application_deadline = Column(Date)
+    hard_skills = Column(JSONB)
+    soft_skills = Column(JSONB)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())

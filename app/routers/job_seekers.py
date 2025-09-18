@@ -6,6 +6,7 @@ from app.services.personal_info_service import PersonalInfoService
 from app.schemas.job_seeker import (
     JobSeekerResponse, JobSeekerUpdate, JobSeekerDocumentResponse, JobSeekerMyPageResponse
 )
+from app.models.application import Application
 from app.schemas.personal_info import PersonalInfoResponse
 
 router = APIRouter()
@@ -74,6 +75,21 @@ async def get_applicant_mypage(
         'ai_learning_answers': mypage_data['ai_learning_answers'],
         'documents': mypage_data['documents']
     }
+    
+    # 지원자 지원 이력: applications 테이블에서 해당 job_seeker의 지원 ID 목록/개수 조회
+    try:
+        application_rows = (
+            db.query(Application.id)
+            .filter(Application.job_seeker_id == job_seeker.id)
+            .order_by(Application.applied_at.desc())
+            .all()
+        )
+        application_ids = [str(row[0]) for row in application_rows]
+        response_data['application_ids'] = application_ids
+        response_data['application_count'] = len(application_ids)
+    except Exception:
+        response_data['application_ids'] = []
+        response_data['application_count'] = 0
     
     return JobSeekerMyPageResponse(**response_data)
 

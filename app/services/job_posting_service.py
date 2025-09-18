@@ -1,9 +1,10 @@
 from sqlalchemy.orm import Session
-from datetime import datetime
+from datetime import datetime, date
 import json
 from typing import Optional, Any, Dict
 
 from app.models.job_posting import JobPosting
+from app.models.company import Company
 
 class JobPostingService:
     def __init__(self, db: Session):
@@ -171,3 +172,63 @@ class JobPostingService:
         """채용공고 마감"""
         # TODO: JobPosting 모델 구현 후 실제 마감 로직
         return {"message": "채용공고가 마감되었습니다", "job_posting_id": job_posting_id}
+    
+    def get_public_job_postings(self, include_closed: bool = False) -> Dict[str, Any]:
+        """공개 채용공고 목록 조회 (인증 불필요)"""
+        try:
+            # 기본 쿼리: 회사 정보와 JOIN
+            query = (
+                self.db.query(JobPosting, Company)
+                .join(Company, JobPosting.company_id == Company.id)
+                .filter(Company.company_status.is_(None) | (Company.company_status == 'active'))  # NULL이거나 active인 회사
+            )
+            
+            # include_closed가 False인 경우 활성 공고만, 마감일이 지나지 않은 공고만
+            if not include_closed:
+                today = date.today()
+                query = query.filter(
+                    JobPosting.is_active == True,
+                    JobPosting.application_deadline >= today
+                )
+            
+            # 최신순으로 정렬
+            results = query.order_by(JobPosting.created_at.desc()).all()
+            
+            job_postings = []
+            for posting, company in results:
+                job_postings.append({
+                    "id": str(posting.id),
+                    "title": posting.title,
+                    "company_id": str(posting.company_id),
+                    "company_name": company.company_name,
+                    "company": {
+                        "company_name": company.company_name,
+                        "industry": company.industry,
+                        "company_size": company.company_size
+                    },
+                    "position_level": posting.position_level,
+                    "employment_type": posting.employment_type,
+                    "location": posting.location,
+                    "salary_min": posting.salary_min,
+                    "salary_max": posting.salary_max,
+                    "main_tasks": posting.main_tasks,
+                    "requirements": posting.requirements,
+                    "preferred": posting.preferred,
+                    "application_deadline": posting.application_deadline.isoformat() if posting.application_deadline else None,
+                    "is_active": posting.is_active,
+                    "created_at": posting.created_at.isoformat() if posting.created_at else "",
+                    "updated_at": posting.updated_at.isoformat() if posting.updated_at else "",
+                    "hard_skills": posting.hard_skills or [],
+                    "soft_skills": posting.soft_skills or [],
+                })
+            
+            return {
+                "success": True,
+                "data": job_postings
+            }
+            
+        except Exception as e:
+            return {
+                "success": False,
+                "message": "채용공고를 불러오는데 실패했습니다."
+            }

@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from app.routers import (
     job_seekers, job_postings, interviews, auth, documents,
-    big5_tests, behavior_tests, ai_learning
+    big5_tests, behavior_tests, ai_learning, public_job_postings, applications
 )
 from app.database.database import engine, Base
 
@@ -38,6 +38,8 @@ app.add_middleware(
 app.include_router(auth.router, tags=["인증"])
 app.include_router(job_seekers.router, tags=["구직자"])
 app.include_router(job_postings.router, tags=["채용공고"])
+app.include_router(public_job_postings.router, tags=["공개 채용공고"])
+app.include_router(applications.router, tags=["지원"])
 app.include_router(interviews.router, tags=["면접"])
 app.include_router(documents.router, tags=["문서"])
 app.include_router(big5_tests.router, tags=["Big5성격검사"])

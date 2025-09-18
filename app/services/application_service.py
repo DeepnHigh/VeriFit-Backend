@@ -6,6 +6,7 @@ from datetime import datetime
 from app.models.application import Application
 from app.models.job_posting import JobPosting
 from app.models.job_seeker import JobSeeker
+from app.models.ai_overall_report import AIOverallReport
 
 class ApplicationService:
     def __init__(self, db: Session):
@@ -48,6 +49,20 @@ class ApplicationService:
         self.db.commit()
         self.db.refresh(application)
         
+        # AI 전체 리포트: 총 지원자 수 증가 (리포트가 존재할 때만)
+        try:
+            report = (
+                self.db.query(AIOverallReport)
+                .filter(AIOverallReport.job_posting_id == job_posting_id)
+                .first()
+            )
+            if report:
+                report.total_applications = (report.total_applications or 0) + 1
+                self.db.commit()
+        except Exception:
+            # 리포트 업데이트 실패는 지원 생성 성공을 막지 않음
+            self.db.rollback()
+
         return {
             "status": 200,
             "success": True,

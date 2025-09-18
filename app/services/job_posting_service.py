@@ -5,6 +5,7 @@ from typing import Optional, Any, Dict
 
 from app.models.job_posting import JobPosting
 from app.models.company import Company
+from app.models.ai_overall_report import AIOverallReport
 
 class JobPostingService:
     def __init__(self, db: Session):
@@ -88,6 +89,25 @@ class JobPostingService:
         self.db.add(job_posting)
         self.db.commit()
         self.db.refresh(job_posting)
+
+        # 채용공고 생성 시 AI 전체 리포트 초기 레코드도 생성
+        try:
+            hard_eval_payload = hard_skills_value if isinstance(hard_skills_value, list) else []
+            soft_eval_payload = soft_skills_value if isinstance(soft_skills_value, list) else []
+            overall_report = AIOverallReport(
+                job_posting_id=job_posting.id,
+                total_applications=0,
+                ai_evaluated_count=0,
+                ai_recommended_count=0,
+                hard_skill_evaluation={"skills": hard_eval_payload},
+                soft_skill_evaluation={"skills": soft_eval_payload},
+                overall_review=""
+            )
+            self.db.add(overall_report)
+            self.db.commit()
+        except Exception:
+            # 리포트 생성 실패는 공고 생성 자체를 막지 않음
+            self.db.rollback()
 
         # 응답 데이터 구성 (requirements는 리스트로 복원)
         response_requirements = []

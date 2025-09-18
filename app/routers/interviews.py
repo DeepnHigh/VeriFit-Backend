@@ -7,7 +7,7 @@ router = APIRouter()
 
 @router.post("/interviews/{job_posting_id}")
 async def create_interview_and_report(
-    job_posting_id: int,
+    job_posting_id: str,
     db: Session = Depends(get_db)
 ):
     """질의응답 및 리포트 생성 - 지원자AI와 면접관AI 인터뷰 진행"""
@@ -16,7 +16,7 @@ async def create_interview_and_report(
 
 @router.get("/interviews/{job_posting_id}")
 async def get_recruitment_status(
-    job_posting_id: int,
+    job_posting_id: str,
     db: Session = Depends(get_db)
 ):
     """기업 채용현황 페이지 - overall_report, 지원자 순위 가져오기"""
@@ -25,7 +25,7 @@ async def get_recruitment_status(
 
 @router.get("/interviews/{application_id}")
 async def get_individual_report(
-    application_id: int,
+    application_id: str,
     db: Session = Depends(get_db)
 ):
     """개별리포트 조회 - AI 평가, 적성검사, 행동검사, 면접 하이라이트"""

@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional, List
+from typing import Optional, List, Any
 from datetime import datetime, date
 
 class JobPostingBase(BaseModel):
@@ -55,3 +55,38 @@ class EvaluationCriteriaResponse(EvaluationCriteriaBase):
     
     class Config:
         from_attributes = True
+
+# 공개 채용공고 조회용 스키마
+class CompanyInfo(BaseModel):
+    company_name: str
+    industry: Optional[str] = None
+    company_size: Optional[str] = None
+
+class PublicJobPostingResponse(BaseModel):
+    id: str
+    title: str
+    company_id: str
+    company_name: str
+    company: CompanyInfo
+    position_level: Optional[str] = None
+    employment_type: Optional[str] = None
+    location: Optional[str] = None
+    salary_min: Optional[int] = None
+    salary_max: Optional[int] = None
+    main_tasks: str
+    requirements: Optional[str] = None
+    preferred: Optional[str] = None
+    application_deadline: Optional[str] = None
+    is_active: bool
+    created_at: str
+    updated_at: str
+    hard_skills: Optional[List[Any]] = None
+    soft_skills: Optional[List[Any]] = None
+
+class PublicJobPostingsResponse(BaseModel):
+    success: bool
+    data: List[PublicJobPostingResponse]
+
+class PublicJobPostingsErrorResponse(BaseModel):
+    success: bool
+    message: str

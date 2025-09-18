@@ -26,15 +26,29 @@ async def login(
     
     access_token = create_access_token(data={"sub": user.email})
     company_name = None
+    user_name = None
     if user.user_type == "company":
         company = db.query(Company).filter(Company.user_id == user.id).first()
         if company:
             company_name = company.company_name
+    else:
+        # 구직자일 경우 이름 반환 (가능한 필드 우선순위: full_name -> email 로컬파트)
+        try:
+            from app.models.job_seeker import JobSeeker
+            job_seeker = db.query(JobSeeker).filter(JobSeeker.user_id == user.id).first()
+            if job_seeker and job_seeker.full_name:
+                user_name = job_seeker.full_name
+        except Exception:
+            user_name = None
+        if not user_name:
+            # fullname이 없으면 이메일의 @ 앞부분을 대체로 사용
+            user_name = (user.email.split("@", 1)[0]) if user.email else None
     return {
         "access_token": access_token,
         "token_type": "bearer",
         "user": UserResponse.model_validate(user),
-        "company_name": company_name
+        "company_name": company_name,
+        "user_name": user_name
     }
 
 @router.post("/register", response_model=UserResponse)

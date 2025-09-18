@@ -133,6 +133,10 @@ class JobSeekerMyPageResponse(JobSeekerBase):
     big5_test_results: List[Big5TestResultForMyPage] = []
     ai_learning_answers: List[AILearningAnswerForMyPage] = []
     documents: List[JobSeekerDocumentResponse] = []
+
+    # 지원 정보
+    application_ids: List[str] = []
+    application_count: int = 0
     
     class Config:
         from_attributes = True

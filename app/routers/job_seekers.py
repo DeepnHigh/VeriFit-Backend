@@ -8,6 +8,7 @@ from app.schemas.job_seeker import (
 )
 from app.models.application import Application
 from app.schemas.personal_info import PersonalInfoResponse
+import urllib.parse
 
 router = APIRouter()
 
@@ -293,8 +294,10 @@ async def delete_file(
     db: Session = Depends(get_db)
 ):
     """파일 삭제 API (프론트엔드 호환)"""
+    # URL 인코딩된 파일명 디코딩
+    decoded_file_name = urllib.parse.unquote(file_name)
     service = JobSeekerService(db)
-    return await service.delete_file(user_id, file_type, file_name)
+    return await service.delete_file(user_id, file_type, decoded_file_name)
 
 # 각 문서 타입별 개별 삭제 엔드포인트
 @router.delete("/s3/delete/{user_id}/cover_letter/{file_name}")
@@ -304,8 +307,10 @@ async def delete_cover_letter(
     db: Session = Depends(get_db)
 ):
     """자기소개서 삭제"""
+    # URL 인코딩된 파일명 디코딩
+    decoded_file_name = urllib.parse.unquote(file_name)
     service = JobSeekerService(db)
-    return await service.delete_file(user_id, "cover_letter", file_name)
+    return await service.delete_file(user_id, "cover_letter", decoded_file_name)
 
 @router.delete("/s3/delete/{user_id}/resume/{file_name}")
 async def delete_resume(
@@ -314,8 +319,10 @@ async def delete_resume(
     db: Session = Depends(get_db)
 ):
     """이력서 삭제"""
+    # URL 인코딩된 파일명 디코딩
+    decoded_file_name = urllib.parse.unquote(file_name)
     service = JobSeekerService(db)
-    return await service.delete_file(user_id, "resume", file_name)
+    return await service.delete_file(user_id, "resume", decoded_file_name)
 
 @router.delete("/s3/delete/{user_id}/portfolio/{file_name}")
 async def delete_portfolio(
@@ -324,8 +331,10 @@ async def delete_portfolio(
     db: Session = Depends(get_db)
 ):
     """포트폴리오 삭제"""
+    # URL 인코딩된 파일명 디코딩
+    decoded_file_name = urllib.parse.unquote(file_name)
     service = JobSeekerService(db)
-    return await service.delete_file(user_id, "portfolio", file_name)
+    return await service.delete_file(user_id, "portfolio", decoded_file_name)
 
 @router.delete("/s3/delete/{user_id}/award/{file_name}")
 async def delete_award(
@@ -334,8 +343,10 @@ async def delete_award(
     db: Session = Depends(get_db)
 ):
     """수상경력 삭제"""
+    # URL 인코딩된 파일명 디코딩
+    decoded_file_name = urllib.parse.unquote(file_name)
     service = JobSeekerService(db)
-    return await service.delete_file(user_id, "award", file_name)
+    return await service.delete_file(user_id, "award", decoded_file_name)
 
 @router.delete("/s3/delete/{user_id}/certificate/{file_name}")
 async def delete_certificate(
@@ -344,8 +355,10 @@ async def delete_certificate(
     db: Session = Depends(get_db)
 ):
     """증명서 삭제"""
+    # URL 인코딩된 파일명 디코딩
+    decoded_file_name = urllib.parse.unquote(file_name)
     service = JobSeekerService(db)
-    return await service.delete_file(user_id, "certificate", file_name)
+    return await service.delete_file(user_id, "certificate", decoded_file_name)
 
 @router.delete("/s3/delete/{user_id}/qualification/{file_name}")
 async def delete_qualification(
@@ -354,8 +367,10 @@ async def delete_qualification(
     db: Session = Depends(get_db)
 ):
     """자격증 삭제"""
+    # URL 인코딩된 파일명 디코딩
+    decoded_file_name = urllib.parse.unquote(file_name)
     service = JobSeekerService(db)
-    return await service.delete_file(user_id, "qualification", file_name)
+    return await service.delete_file(user_id, "qualification", decoded_file_name)
 
 @router.delete("/s3/delete/{user_id}/paper/{file_name}")
 async def delete_paper(
@@ -364,8 +379,10 @@ async def delete_paper(
     db: Session = Depends(get_db)
 ):
     """논문 삭제"""
+    # URL 인코딩된 파일명 디코딩
+    decoded_file_name = urllib.parse.unquote(file_name)
     service = JobSeekerService(db)
-    return await service.delete_file(user_id, "paper", file_name)
+    return await service.delete_file(user_id, "paper", decoded_file_name)
 
 @router.delete("/s3/delete/{user_id}/other/{file_name}")
 async def delete_other(
@@ -374,8 +391,10 @@ async def delete_other(
     db: Session = Depends(get_db)
 ):
     """기타자료 삭제"""
+    # URL 인코딩된 파일명 디코딩
+    decoded_file_name = urllib.parse.unquote(file_name)
     service = JobSeekerService(db)
-    return await service.delete_file(user_id, "other", file_name)
+    return await service.delete_file(user_id, "other", decoded_file_name)
 
 @router.delete("/s3/delete/{user_id}/github/{file_name}")
 async def delete_github(
@@ -384,8 +403,10 @@ async def delete_github(
     db: Session = Depends(get_db)
 ):
     """GitHub 링크 삭제"""
+    # URL 인코딩된 파일명 디코딩
+    decoded_file_name = urllib.parse.unquote(file_name)
     service = JobSeekerService(db)
-    return await service.delete_file(user_id, "github", file_name)
+    return await service.delete_file(user_id, "github", decoded_file_name)
 
 @router.get("/applicants/parses/{user_id}", response_model=PersonalInfoResponse)
 async def parse_personal_info(

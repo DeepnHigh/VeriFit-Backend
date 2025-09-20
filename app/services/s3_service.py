@@ -7,8 +7,8 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-class S3Service:
     def __init__(self):
+class S3Service:
         self.s3_base_url = settings.s3_base_url
     
     async def upload_file(

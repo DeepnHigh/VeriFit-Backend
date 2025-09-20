@@ -11,6 +11,7 @@ from app.models.ai_overall_report import AIOverallReport
 from app.models.big5_test_result import Big5TestResult
 from app.models.ai_learning_question import AILearningQuestion
 from app.models.ai_learning_answer import AILearningAnswer
+from app.models.job_seeker_document import JobSeekerDocument
 
 class InterviewService:
     def __init__(self, db: Session):
@@ -315,6 +316,39 @@ class InterviewService:
                 "response_date": answer.response_date.isoformat() if answer.response_date else None,
             })
 
+        # 지원자 문서 조회
+        documents = (
+            self.db.query(JobSeekerDocument)
+            .filter(JobSeekerDocument.job_seeker_id == job_seeker_uuid)
+            .order_by(JobSeekerDocument.uploaded_at.desc())
+            .all()
+        )
+        
+        documents_list = []
+        for doc in documents:
+            documents_list.append({
+                "id": str(doc.id),
+                "document_type": doc.document_type,
+                "file_name": doc.file_name,
+                "file_url": doc.file_url,
+                "file_size": doc.file_size,
+                "mime_type": doc.mime_type,
+                "uploaded_at": doc.uploaded_at.isoformat() if doc.uploaded_at else None,
+            })
+
+        # 디버깅: behavior_text 확인
+        behavior_text = getattr(job_seeker, "behavior_text", None)
+        print(f"DEBUG: behavior_text = {behavior_text}")
+        
+        # 만약 None이면 직접 조회
+        if behavior_text is None:
+            from sqlalchemy import text
+            result = self.db.execute(text("SELECT behavior_text FROM job_seekers WHERE id = :id"), {"id": str(job_seeker.id)})
+            row = result.fetchone()
+            if row:
+                behavior_text = row[0]
+                print(f"DEBUG: Direct query behavior_text = {behavior_text}")
+
         return {
             "status": 200,
             "success": True,
@@ -335,9 +369,11 @@ class InterviewService:
                     "company_name": getattr(job_seeker, "company_name", None),
                     "bio": getattr(job_seeker, "bio", None),
                 },
-                "documents": [],  # TODO: 실제 문서 정보 추가
+                "documents": documents_list,
                 "big5_test_results": big5_test_results,
-                "behavior_test_results": {},  # TODO: 행동검사 모델이 없어서 빈 객체로 유지
+                "behavior_test_results": {
+                    "behavior_text": behavior_text
+                },
                 "own_qnas": own_qnas
             },
         }

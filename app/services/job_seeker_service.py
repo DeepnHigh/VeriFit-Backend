@@ -96,7 +96,8 @@ class JobSeekerService:
             'job_seeker': job_seeker,
             'big5_test_results': [big5_latest] if big5_latest else [],
             'ai_learning_answers': ai_learning_answers,
-            'documents': documents
+            'documents': documents,
+            'behavior_text': getattr(job_seeker, 'behavior_text', None)
         }
     
     async def upload_file(self, user_id: str | uuid.UUID, document_type: str, file: UploadFile) -> dict:

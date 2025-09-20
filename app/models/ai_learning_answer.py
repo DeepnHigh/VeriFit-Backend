@@ -6,7 +6,7 @@ import uuid
 from app.database.database import Base
 
 class AILearningAnswer(Base):
-    __tablename__ = "ai_laerning_answers"
+    __tablename__ = "ai_learning_answers"
     
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     job_seeker_id = Column(UUID(as_uuid=True), ForeignKey("job_seekers.id"), nullable=False)

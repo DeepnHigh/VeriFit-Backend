@@ -23,7 +23,7 @@ async def get_recruitment_status(
     service = InterviewService(db)
     return service.get_recruitment_status(job_posting_id)
 
-@router.get("/interviews/{application_id}")
+@router.get("/interviews/detail/{application_id}")
 async def get_individual_report(
     application_id: str,
     db: Session = Depends(get_db)
@@ -31,6 +31,32 @@ async def get_individual_report(
     """개별리포트 조회 - AI 평가, 적성검사, 행동검사, 면접 하이라이트"""
     service = InterviewService(db)
     return service.get_individual_report(application_id)
+
+@router.get("/interviews/report/{application_id}")
+async def get_individual_report_by_application(
+    application_id: str,
+    db: Session = Depends(get_db)
+):
+    """기업 리포트 조회 - applications_id로 지원자 이름 반환 (임시 간소 응답)"""
+    service = InterviewService(db)
+    result = service.get_individual_report_by_application(application_id)
+    if not result.get("success"):
+        status_code = result.get("status", 404)
+        raise HTTPException(status_code=status_code, detail=result.get("message", "리포트를 찾을 수 없습니다"))
+    return result
+
+@router.get("/company/interviews/report/{application_id}")
+async def get_company_individual_report_by_application(
+    application_id: str,
+    db: Session = Depends(get_db)
+):
+    """기업 리포트 조회 (company prefix) - applications_id로 지원자 이름 반환 (임시)"""
+    service = InterviewService(db)
+    result = service.get_individual_report_by_application(application_id)
+    if not result.get("success"):
+        status_code = result.get("status", 404)
+        raise HTTPException(status_code=status_code, detail=result.get("message", "리포트를 찾을 수 없습니다"))
+    return result
 
 @router.get("/interviews/conversations/{application_id}")
 async def get_interview_conversations(
@@ -49,3 +75,16 @@ async def get_applicant_profile_for_company(
     """지원자 프로필 조회 (기업전용)"""
     service = InterviewService(db)
     return service.get_applicant_profile_for_company(application_id)
+
+@router.get("/company/interviews/profiles/{application_id}")
+async def get_company_applicant_profile(
+    application_id: str,
+    db: Session = Depends(get_db)
+):
+    """기업용 지원자 프로필 조회 (company prefix) - applications_id로 지원자 정보 반환"""
+    service = InterviewService(db)
+    result = service.get_applicant_profile_by_application(application_id)
+    if not result.get("success"):
+        status_code = result.get("status", 404)
+        raise HTTPException(status_code=status_code, detail=result.get("message", "지원자 프로필을 찾을 수 없습니다"))
+    return result

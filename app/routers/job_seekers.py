@@ -73,7 +73,8 @@ async def get_applicant_mypage(
         # 추가 관련 데이터
         'big5_test_results': mypage_data['big5_test_results'],
         'ai_learning_answers': mypage_data['ai_learning_answers'],
-        'documents': mypage_data['documents']
+        'documents': mypage_data['documents'],
+        'behavior_text': mypage_data['behavior_text']
     }
     
     # 지원자 지원 이력: applications 테이블에서 해당 job_seeker의 지원 ID 목록/개수 조회

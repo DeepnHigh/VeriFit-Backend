@@ -6,16 +6,15 @@ from app.core.config import settings
 import logging
 
 logger = logging.getLogger(__name__)
-
-    def __init__(self):
 class S3Service:
+    def __init__(self):
         self.s3_base_url = settings.s3_base_url
-    
+
     async def upload_file(
-        self, 
-        file: UploadFile, 
-        user_id: str, 
-        document_type: str
+        self,
+        file: UploadFile,
+        user_id: str,
+        document_type: str,
     ) -> dict:
         """
         로컬 파일 시스템에 파일 업로드 (임시 해결책)

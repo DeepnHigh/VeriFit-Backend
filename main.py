@@ -5,6 +5,7 @@ from app.routers import (
     job_seekers, job_postings, interviews, auth, documents,
     big5_tests, behavior_tests, ai_learning, public_job_postings, applications
 )
+from app.routers import hardskill
 from app.database.database import engine, Base
 
 # 모든 모델 import (테이블 생성을 위해 필요)
@@ -24,8 +25,31 @@ app = FastAPI(
     version="1.0.0"
 )
 
+# 서버 시작 시 등록된 라우터/엔드포인트를 로그에 찍어 디버깅에 도움을 줍니다.
+@app.on_event("startup")
+async def log_registered_routes():
+    try:
+        routes = []
+        for route in app.router.routes:
+            # route.path 또는 getattr로 안전하게 접근
+            path = getattr(route, "path", None) or getattr(route, "path_format", None) or str(route)
+            methods = getattr(route, "methods", None)
+            routes.append({"path": path, "methods": list(methods) if methods else []})
+        logger.info(f"Registered routes: {routes}")
+    except Exception:
+        logger.exception("Failed to list registered routes on startup")
+
 # CORS 설정 (환경변수로 관리)
 from app.core.config import settings
+import logging
+
+# 로거 설정 (간단히)
+logger = logging.getLogger("verifit.main")
+logger.setLevel(logging.INFO)
+
+logger.info(f"Configured CORS origins: {settings.cors_origins}")
+
+# Standard CORSMiddleware (uses configured origins)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,  # 환경변수에서 CORS origins 가져오기
@@ -33,6 +57,33 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Fallback middleware: ensure CORS headers are present even on errors or when
+# upstream middleware/exception handlers might not include them.
+@app.middleware("http")
+async def ensure_cors_headers(request, call_next):
+    try:
+        response = await call_next(request)
+    except Exception as exc:
+        # Build a simple 500 response (FastAPI exception handlers may run later in middleware chain,
+        # but ensure we always include CORS headers here to avoid browser CORS issues during failures).
+        from fastapi.responses import JSONResponse
+        logger.exception("Unhandled exception in request:")
+        response = JSONResponse(status_code=500, content={"detail": str(exc)})
+
+    # If request origin is allowed, echo it; otherwise skip to avoid exposing wildcard behavior.
+    origin = request.headers.get("origin")
+    try:
+        if origin and (origin in settings.cors_origins or "*" in settings.cors_origins):
+            response.headers["Access-Control-Allow-Origin"] = origin if origin in settings.cors_origins else "*"
+            response.headers["Access-Control-Allow-Credentials"] = "true"
+            response.headers["Access-Control-Allow-Methods"] = ",".join(["GET","POST","PUT","DELETE","OPTIONS"]) 
+            response.headers["Access-Control-Allow-Headers"] = request.headers.get("access-control-request-headers", "*")
+    except Exception:
+        # Don't let header-setting break the response; just log.
+        logger.exception("Failed to set fallback CORS headers")
+
+    return response
 
 # 라우터 등록
 app.include_router(auth.router, tags=["인증"])
@@ -45,6 +96,7 @@ app.include_router(documents.router, tags=["문서"])
 app.include_router(big5_tests.router, tags=["Big5성격검사"])
 app.include_router(behavior_tests.router, tags=["행동검사"])
 app.include_router(ai_learning.router, tags=["AI학습"])
+app.include_router(hardskill.router)
 
 # 정적 파일 서빙 (업로드된 파일들)
 app.mount("/files", StaticFiles(directory="uploads"), name="files")

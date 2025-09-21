@@ -49,6 +49,9 @@ class Settings(BaseSettings):
     # Function URL 인증 방식: NONE 또는 AWS_IAM
     lambda_function_url_auth: Optional[str] = Field(default="NONE", alias="LAMBDA_FUNCTION_URL_AUTH")
 
+    # GitHub Token (권장: .env 또는 환경변수로 설정)
+    github_token: Optional[str] = Field(default=None, alias="GITHUB_TOKEN")
+
 
     @model_validator(mode="after")
     def _normalize_cors_origins(self):

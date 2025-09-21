@@ -39,7 +39,8 @@ class JobSeekerResponse(JobSeekerBase):
     id: uuid.UUID
     user_id: uuid.UUID
     profile_picture: Optional[str] = None
-    github_repositories: Optional[List[Dict[str, Any]]] = None
+    # Allow either a list of dicts or the stored dict format {"username": [...], "repository": [...]}
+    github_repositories: Optional[Any] = None
     portfolios: Optional[List[Dict[str, Any]]] = None
     resumes: Optional[List[Dict[str, Any]]] = None
     awards: Optional[List[Dict[str, Any]]] = None
@@ -51,6 +52,7 @@ class JobSeekerResponse(JobSeekerBase):
     profile_completion_percentage: Decimal
     last_profile_update: Optional[datetime] = None
     created_at: datetime
+    github_histories: Optional[Any] = None
     
     class Config:
         from_attributes = True
@@ -116,7 +118,8 @@ class JobSeekerMyPageResponse(JobSeekerBase):
     id: uuid.UUID
     user_id: uuid.UUID
     profile_picture: Optional[str] = None
-    github_repositories: Optional[List[Dict[str, Any]]] = None
+    # Allow either a list of dicts or the stored dict format {"username": [...], "repository": [...]}
+    github_repositories: Optional[Any] = None
     portfolios: Optional[List[Dict[str, Any]]] = None
     resumes: Optional[List[Dict[str, Any]]] = None
     awards: Optional[List[Dict[str, Any]]] = None

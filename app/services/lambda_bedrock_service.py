@@ -1,5 +1,6 @@
 import httpx  # urllib 대신 httpx 사용
-import aioboto3 # boto3 대신 aioboto3 사용
+import boto3
+from starlette.concurrency import run_in_threadpool
 import json
 import logging
 from typing import Dict, Any, Optional
@@ -73,16 +74,25 @@ class LambdaBedrockService:
 
     async def _invoke_via_sdk_async(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         """(비동기) AWS SDK (aioboto3)를 통해 Lambda 함수를 호출합니다."""
-        logger.info(f"🚀 Lambda SDK(async)로 '{self.lambda_function_name}' 호출 시작...")
-        session = aioboto3.Session()
-        async with session.client("lambda", region_name=self.region) as lambda_client:
-            response = await lambda_client.invoke(
+        logger.info(f"🚀 Lambda SDK 호출(start sync boto3 in threadpool)로 '{self.lambda_function_name}' 호출 시작...")
+
+        def invoke_sync():
+            # boto3 client는 동기이므로 threadpool에서 실행
+            client = boto3.client('lambda', region_name=self.region)
+            response = client.invoke(
                 FunctionName=self.lambda_function_name,
                 InvocationType='RequestResponse',
-                Payload=json.dumps(payload)
+                Payload=json.dumps(payload).encode('utf-8')
             )
-            payload_bytes = await response['Payload'].read()
-            return json.loads(payload_bytes)
+            # response['Payload']는 botocore.response.StreamingBody
+            payload_bytes = response['Payload'].read()
+            try:
+                return json.loads(payload_bytes)
+            except Exception:
+                # payload가 이미 dict인 경우도 있어서 안전하게 처리
+                return payload_bytes
+
+        return await run_in_threadpool(invoke_sync)
 
     async def extract_personal_info(self, extracted_text: str) -> PersonalInfo:
         """Lambda를 통해 개인정보 추출 (로직 단순화 및 비동기 최적화)"""

@@ -22,6 +22,7 @@ class JobSeeker(Base):
     major = Column(String(100))  # 전공
     graduation_year = Column(Integer)  # 졸업년도
     github_repositories = Column(JSONB)  # GitHub 레포지토리 URL 리스트
+    github_histories = Column(JSONB)  # GitHub 활동 요약 저장용
     portfolios = Column(JSONB)  # 포트폴리오
     resumes = Column(JSONB)  # 이력서
     awards = Column(JSONB)  # 수상경력 리스트

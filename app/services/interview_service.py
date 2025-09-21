@@ -49,6 +49,7 @@ class InterviewService:
                 AIEvaluation.hard_score.label("hard_score"),
                 AIEvaluation.soft_score.label("soft_score"),
                 AIEvaluation.ai_summary.label("ai_summary"),
+                AIEvaluation.created_at.label("evaluated_at"),
             )
             .join(JobSeeker, JobSeeker.id == Application.job_seeker_id)
             .outerjoin(AIEvaluation, AIEvaluation.application_id == Application.id)
@@ -88,6 +89,7 @@ class InterviewService:
                 "hard_score": hard_score_val,
                 "soft_score": soft_score_val,
                 "ai_summary": r.ai_summary,
+                "evaluated_at": r.evaluated_at.isoformat() if r.evaluated_at else None,
             })
 
         # 카운트 집계
@@ -128,6 +130,7 @@ class InterviewService:
                     "id": str(posting.id),
                     "title": posting.title,
                     "status": "active" if posting.is_active else "inactive",
+                    "eval_status": posting.eval_status,
                     "created_at": posting.created_at.isoformat() if posting.created_at else None,
                     "hard_skills": posting.hard_skills or [],
                     "soft_skills": posting.soft_skills or [],

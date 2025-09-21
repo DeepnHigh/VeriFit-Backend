@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.database.database import get_db
 from app.services.interview_service import InterviewService
+from app.schemas.interview import RecruitmentStatusResponse
 
 router = APIRouter()
 
@@ -14,7 +15,7 @@ async def create_interview_and_report(
     service = InterviewService(db)
     return service.create_interview_and_report(job_posting_id)
 
-@router.get("/interviews/{job_posting_id}")
+@router.get("/interviews/{job_posting_id}", response_model=RecruitmentStatusResponse)
 async def get_recruitment_status(
     job_posting_id: str,
     db: Session = Depends(get_db)

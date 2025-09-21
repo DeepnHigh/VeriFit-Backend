@@ -13,6 +13,7 @@ class JobPostingBase(BaseModel):
     requirements: Optional[str] = None
     preferred: Optional[str] = None
     application_deadline: Optional[date] = None
+    eval_status: Optional[str] = "ready"
 
 class JobPostingCreate(JobPostingBase):
     company_id: str
@@ -28,6 +29,7 @@ class JobPostingUpdate(BaseModel):
     requirements: Optional[str] = None
     preferred: Optional[str] = None
     application_deadline: Optional[date] = None
+    eval_status: Optional[str] = None
     is_active: Optional[bool] = None
 
 class JobPostingResponse(JobPostingBase):

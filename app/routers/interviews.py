@@ -15,6 +15,31 @@ async def create_interview_and_report(
     service = InterviewService(db)
     return service.create_interview_and_report(job_posting_id)
 
+@router.post("/interviews/{job_posting_id}/start-evaluation")
+async def start_evaluation(
+    job_posting_id: str,
+    db: Session = Depends(get_db)
+):
+    """
+    AI 평가 시작 - job_posting의 eval_status를 'ing'로 업데이트
+    
+    TODO: 
+    1. AI 대결 시스템 구현 (기업 AI vs 지원자 AI)
+    2. RAG 기반 채용공고 정보 생성
+    3. RAG 기반 지원자 이력서 정보 생성
+    4. AWS Bedrock Lambda를 통한 AI 평가 실행
+    5. 평가 결과를 AIEvaluation 테이블에 저장
+    6. eval_status를 'finish'로 업데이트
+    """
+    service = InterviewService(db)
+    result = service.start_evaluation(job_posting_id)
+    
+    if not result.get("success"):
+        status_code = result.get("status", 500)
+        raise HTTPException(status_code=status_code, detail=result.get("message", "AI 평가 시작에 실패했습니다"))
+    
+    return result
+
 @router.get("/interviews/{job_posting_id}", response_model=RecruitmentStatusResponse)
 async def get_recruitment_status(
     job_posting_id: str,

@@ -26,6 +26,60 @@ class InterviewService:
             "interview_id": 1
         }
     
+    def start_evaluation(self, job_posting_id: str):
+        """
+        AI 평가 시작 - job_posting의 eval_status를 'ing'로 업데이트
+        
+        TODO: 
+        1. 채용공고별 모든 지원자 조회
+        2. 각 지원자별로 AI 대결 시스템 실행
+        3. RAG 기반 채용공고 정보 생성 (title, main_tasks, requirements, preferred, hard_skills, soft_skills)
+        4. RAG 기반 지원자 정보 생성 (resumes, portfolios, bio, experience 등)
+        5. AWS Bedrock Lambda를 통한 AI 평가 실행
+        6. 평가 결과를 AIEvaluation 테이블에 저장
+        7. 모든 평가 완료 후 eval_status를 'finish'로 업데이트
+        """
+        try:
+            # 공고 존재 확인
+            posting = (
+                self.db.query(JobPosting)
+                .filter(JobPosting.id == job_posting_id)
+                .first()
+            )
+            if not posting:
+                return {
+                    "status": 404, 
+                    "success": False, 
+                    "message": "채용공고를 찾을 수 없습니다"
+                }
+            
+            # eval_status를 'ing'로 업데이트
+            posting.eval_status = 'ing'
+            self.db.commit()
+            self.db.refresh(posting)
+            
+            # TODO: 여기서 실제 AI 평가 로직을 백그라운드에서 실행해야 함
+            # 현재는 상태만 업데이트하고 있음
+            
+            return {
+                "status": 200,
+                "success": True,
+                "message": "AI 평가가 시작되었습니다",
+                "data": {
+                    "job_posting_id": str(posting.id),
+                    "title": posting.title,
+                    "eval_status": posting.eval_status
+                }
+            }
+            
+        except Exception as e:
+            self.db.rollback()
+            return {
+                "status": 500,
+                "success": False,
+                "message": f"AI 평가 시작 중 오류가 발생했습니다: {str(e)}"
+            }
+    
     def get_recruitment_status(self, job_posting_id: str):
         """채용현황 조회 (공고 정보, 지원 목록, 카운트)"""
         # 공고 존재 확인

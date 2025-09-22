@@ -23,6 +23,7 @@ class JobPosting(Base):
     application_deadline = Column(Date)
     hard_skills = Column(JSONB)
     soft_skills = Column(JSONB)
+    eval_status = Column(Enum('ready', 'ing', 'finish', name='eval_status_enum'), default='ready')
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())

@@ -80,7 +80,11 @@ class Settings(BaseSettings):
         return self
 
     
-    class Config:
-        env_file = ".env"
+    # pydantic v2 model configuration: load `.env` and ignore extra env vars
+    model_config = {
+        "env_file": ".env",
+        "env_file_encoding": "utf-8",
+        "extra": "ignore",
+    }
 
 settings = Settings()

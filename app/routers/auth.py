@@ -1,10 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.database.database import get_db
-from app.schemas.user import UserCreate, UserResponse, UserLogin
+from app.schemas.user import UserCreate, UserResponse, UserLogin, ApplicantSignupRequest, CompanySignupRequest
 from app.services.auth_service import AuthService
 from app.models.company import Company
 from app.core.security import create_access_token
+from app.models.user import User
+from app.models.job_seeker import JobSeeker
+from app.models.company import Company as CompanyModel
+from app.core.security import get_password_hash
 
 router = APIRouter()
 
@@ -68,3 +72,61 @@ async def register(
     
     user = auth_service.create_user(user_data)
     return UserResponse.model_validate(user)
+
+
+@router.post("/signup/applicant", response_model=UserResponse)
+async def signup_applicant(
+    payload: ApplicantSignupRequest,
+    db: Session = Depends(get_db)
+):
+    """구직자 회원가입: users + job_seekers 동시 생성"""
+    auth_service = AuthService(db)
+    # 이메일 중복 검사
+    if auth_service.get_user_by_email(payload.email):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="이미 등록된 이메일입니다")
+
+    # 트랜잭션 처리
+    try:
+        hashed = get_password_hash(payload.password)
+        user = User(email=payload.email, password=hashed, user_type="job_seeker")
+        db.add(user)
+        db.flush()
+
+        job_seeker = JobSeeker(user_id=user.id, full_name=payload.name, email=payload.email)
+        db.add(job_seeker)
+        db.commit()
+        db.refresh(user)
+        return UserResponse.model_validate(user)
+    except Exception:
+        db.rollback()
+        raise
+
+
+@router.post("/signup/company", response_model=UserResponse)
+async def signup_company(
+    payload: CompanySignupRequest,
+    db: Session = Depends(get_db)
+):
+    """기업 회원가입: users + companies 동시 생성"""
+    auth_service = AuthService(db)
+    if auth_service.get_user_by_email(payload.email):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="이미 등록된 이메일입니다")
+
+    try:
+        hashed = get_password_hash(payload.password)
+        user = User(email=payload.email, password=hashed, user_type="company")
+        db.add(user)
+        db.flush()
+
+        company = CompanyModel(
+            user_id=user.id,
+            company_name=payload.companyName,
+            business_registration_number=payload.businessNumber
+        )
+        db.add(company)
+        db.commit()
+        db.refresh(user)
+        return UserResponse.model_validate(user)
+    except Exception:
+        db.rollback()
+        raise

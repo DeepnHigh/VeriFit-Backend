@@ -24,3 +24,15 @@ class UserResponse(UserBase):
 class UserLogin(BaseModel):
     email: EmailStr
     password: str
+
+# Signup request schemas
+class ApplicantSignupRequest(BaseModel):
+    email: EmailStr
+    password: str
+    name: str
+
+class CompanySignupRequest(BaseModel):
+    companyName: str
+    email: EmailStr
+    password: str
+    businessNumber: Optional[str] = None

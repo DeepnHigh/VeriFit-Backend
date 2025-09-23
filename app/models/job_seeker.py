@@ -38,6 +38,8 @@ class JobSeeker(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())  # 생성일시
     full_text = Column(Text)  # 전체 텍스트(LLM/검색용)
     behavior_text = Column(Text)  # 행동검사 텍스트
+    big5_text = Column(Text)  # Big5 성격검사 요약 텍스트
+    aiqa_text = Column(Text)  # AI Q&A 텍스트
     
     # 관계 설정
     user = relationship("User", back_populates="job_seeker")

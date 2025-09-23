@@ -208,17 +208,21 @@ Table job_postings {
   id uuid [primary key, default: `uuid_generate_v4()`]
   company_id uuid [ref: > companies.id, not null]
   title varchar(200) [not null]
-  position_level enum('intern', 'junior', 'mid', 'senior', 'lead', 'manager')
-  employment_type enum('full_time', 'part_time', 'contract', 'internship')
-  location varchar(200)
-  salary_min integer
-  salary_max integer
+  position_level enum('intern', 'junior', 'mid', 'senior', 'lead', 'manager') [not null]
+  employment_type enum('full_time', 'part_time', 'contract', 'internship') [not null]
+  location varchar(200) [not null]
+  salary_min integer [not null]
+  salary_max integer [not null]
   main_tasks text [not null]
-  requirements text
-  preferred text
-  application_deadline date
-  hard_skills jsonb
-  soft_skills jsonb
+  requirements text [not null]
+  preferred text [not null]
+  application_deadline date [not null]
+  hard_skills jsonb [not null]
+  soft_skills jsonb [not null]
+  culture text [not null]
+  benefits text [not null]
+  eval_status enum('ready', 'ing', 'finish') [default: 'ready'] // AI 평가 상태
+  interview_questions jsonb // 면접 질문 리스트 저장
   is_active boolean [default: true]
   created_at timestamp [default: `now()`]
   updated_at timestamp [default: `now()`]
@@ -230,6 +234,7 @@ Table job_postings {
     employment_type
     is_active
     application_deadline
+    eval_status
   }
 }
 

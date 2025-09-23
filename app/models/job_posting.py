@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Text, DateTime, ForeignKey, Integer, Boolean, Enum, Date
+from sqlalchemy import Column, String, Text, DateTime, ForeignKey, Integer, Boolean, Enum, Date, text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
@@ -20,9 +20,12 @@ class JobPosting(Base):
     main_tasks = Column(Text, nullable=False)
     requirements = Column(Text)
     preferred = Column(Text)
+    culture = Column(Text, nullable=False, server_default=text("''"))
+    benefits = Column(Text, nullable=False, server_default=text("''"))
     application_deadline = Column(Date)
     hard_skills = Column(JSONB)
     soft_skills = Column(JSONB)
+    interview_questions = Column(JSONB)  # 면접 질문 리스트 저장
     eval_status = Column(Enum('ready', 'ing', 'finish', name='eval_status_enum'), default='ready')
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

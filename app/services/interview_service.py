@@ -12,6 +12,9 @@ from app.models.big5_test_result import Big5TestResult
 from app.models.ai_learning_question import AILearningQuestion
 from app.models.ai_learning_answer import AILearningAnswer
 from app.models.job_seeker_document import JobSeekerDocument
+from app.services.interview_question_service import InterviewQuestionService
+from app.services.ai_conversation_service import AIConversationService
+from app.services.lambda_bedrock_service import LambdaBedrockService
 
 class InterviewService:
     def __init__(self, db: Session):
@@ -26,21 +29,18 @@ class InterviewService:
             "interview_id": 1
         }
     
-    def start_evaluation(self, job_posting_id: str):
+    async def start_evaluation(self, job_posting_id: str):
         """
-        AI 평가 시작 - job_posting의 eval_status를 'ing'로 업데이트
+        AI 평가 시작 - 새로운 프로세스 적용
         
-        TODO: 
-        1. 채용공고별 모든 지원자 조회
-        2. 각 지원자별로 AI 대결 시스템 실행
-        3. RAG 기반 채용공고 정보 생성 (title, main_tasks, requirements, preferred, hard_skills, soft_skills)
-        4. RAG 기반 지원자 정보 생성 (resumes, portfolios, bio, experience 등)
-        5. AWS Bedrock Lambda를 통한 AI 평가 실행
-        6. 평가 결과를 AIEvaluation 테이블에 저장
-        7. 모든 평가 완료 후 eval_status를 'finish'로 업데이트
+        프로세스:
+        1. 채용공고 정보로 면접 질문 생성
+        2. 지원자별로 면접 진행 (질문-답변)
+        3. LangChain 기반 재시도로 완전한 답변 보장
+        4. 최종 평가 결과 생성 및 저장
         """
         try:
-            # 공고 존재 확인
+            # 1. 공고 존재 확인
             posting = (
                 self.db.query(JobPosting)
                 .filter(JobPosting.id == job_posting_id)
@@ -53,22 +53,185 @@ class InterviewService:
                     "message": "채용공고를 찾을 수 없습니다"
                 }
             
-            # eval_status를 'ing'로 업데이트
+            # 2. eval_status를 'ing'로 업데이트
             posting.eval_status = 'ing'
             self.db.commit()
             self.db.refresh(posting)
             
-            # TODO: 여기서 실제 AI 평가 로직을 백그라운드에서 실행해야 함
-            # 현재는 상태만 업데이트하고 있음
+            # 3. 지원자 목록 조회
+            applications = (
+                self.db.query(Application)
+                .filter(Application.job_posting_id == job_posting_id)
+                .all()
+            )
+            
+            print(f"[DEBUG] 지원자 수: {len(applications)}")
+            for app in applications:
+                print(f"[DEBUG] Application ID: {app.id}, Job Seeker ID: {app.job_seeker_id}")
+            
+            if not applications:
+                # 지원자가 없는 경우
+                posting.eval_status = 'finish'
+                self.db.commit()
+                return {
+                    "status": 200,
+                    "success": True,
+                    "message": "지원자가 없어 평가를 완료했습니다",
+                    "data": {
+                        "job_posting_id": str(posting.id),
+                        "title": posting.title,
+                        "eval_status": posting.eval_status,
+                        "evaluated_count": 0
+                    }
+                }
+            
+            # 4. 면접 질문 생성 (DB에 저장됨)
+            question_service = InterviewQuestionService(self.db)
+            questions = await question_service.generate_interview_questions(posting)
+            
+            if not questions:
+                # 질문 생성 실패 시 기본 질문 사용
+                questions = question_service._get_default_questions(posting)
+                # 기본 질문도 DB에 저장
+                posting.interview_questions = questions
+                self.db.commit()
+            
+            # 5. 각 지원자별로 aiqa_text 생성/DB 저장 + KB 업로드 (한 번에 처리)
+            kb_service = LambdaBedrockService()
+            kb_sync_results = []
+            
+            for application in applications:
+                try:
+                    job_seeker = (
+                        self.db.query(JobSeeker)
+                        .filter(JobSeeker.id == application.job_seeker_id)
+                        .first()
+                    )
+                    if not job_seeker:
+                        print(f"[DEBUG] Job Seeker를 찾을 수 없음 - Application ID: {application.id}, Job Seeker ID: {application.job_seeker_id}")
+                        kb_sync_results.append({
+                            "application_id": str(application.id),
+                            "job_seeker_id": None,
+                            "success": False,
+                            "error": "job_seeker_not_found"
+                        })
+                        continue
+                    
+                    print(f"[DEBUG] 지원자 {job_seeker.id} 처리 시작")
+                    print(f"[DEBUG] Job Seeker 정보: ID={job_seeker.id}, Name={getattr(job_seeker, 'name', 'N/A')}")
+                    
+                    # 5-1. AI Q&A 텍스트 생성 및 DB 저장
+                    try:
+                        print(f"[DEBUG] AI Q&A 조회 시작 - Job Seeker ID: {job_seeker.id} (type={type(job_seeker.id)})")
+                        
+                        ai_qnas = (
+                            self.db.query(AILearningQuestion, AILearningAnswer)
+                            .join(AILearningAnswer, AILearningAnswer.question_id == AILearningQuestion.id)
+                            .filter(AILearningAnswer.job_seeker_id == job_seeker.id)
+                            .order_by(AILearningQuestion.display_order, AILearningAnswer.response_date)
+                            .all()
+                        )
+                        print(f"[DEBUG] AI Q&A 조회 결과: {len(ai_qnas)}개")
+                        
+                        qa_lines = []
+                        for question, answer in ai_qnas:
+                            q_text = (question.question_text or "").strip()
+                            a_text = (answer.answer_text or "").strip()
+                            if q_text and a_text:
+                                qa_lines.append(f"질문: {q_text}\n답변: {a_text}")
+                        
+                        aiqa_text = "\n\n".join(qa_lines) if qa_lines else ""
+                        print(f"[DEBUG] 생성된 aiqa_text 길이: {len(aiqa_text)}")
+                        
+                        existing_aiqa_text = getattr(job_seeker, "aiqa_text", None)
+                        print(f"[DEBUG] 기존 aiqa_text 길이: {len(existing_aiqa_text) if existing_aiqa_text else 0}")
+                        
+                        if aiqa_text != (existing_aiqa_text or ""):
+                            print(f"[DEBUG] aiqa_text DB 저장 시작")
+                            job_seeker.aiqa_text = aiqa_text
+                            self.db.commit()
+                            self.db.refresh(job_seeker)
+                            print(f"[DEBUG] aiqa_text DB 저장 완료 (길이: {len(job_seeker.aiqa_text or '')})")
+                        else:
+                            print(f"[DEBUG] aiqa_text 저장 건너뜀 (변경 없음)")
+                            
+                    except Exception as e:
+                        print(f"[DEBUG] aiqa_text 생성 중 오류: {str(e)}")
+                        # 오류 시에도 기존 값 사용
+                        aiqa_text = getattr(job_seeker, "aiqa_text", None) or ""
+                    
+                    # 5-2. KB 업로드 (최신 aiqa_text 포함)
+                    full_text = getattr(job_seeker, "full_text", None)
+                    behavior_text = getattr(job_seeker, "behavior_text", None)
+                    big5_text = getattr(job_seeker, "big5_text", None)
+                    aiqa_text = getattr(job_seeker, "aiqa_text", None) or ""  # 위에서 저장된 최신 값
+                    print(f"[DEBUG] KB 업로드 직전 aiqa_text 길이: {len(aiqa_text)}")
+
+                    ingest_payload = {
+                        "applicant_id": str(job_seeker.id),
+                        "job_posting_id": str(posting.id),
+                        "full_text": full_text,
+                        "behavior_text": behavior_text,
+                        "big5_text": big5_text,
+                        "aiqa_text": aiqa_text,
+                    }
+                    print(f"[DEBUG] KB 업로드 시작 - Job Seeker ID: {job_seeker.id}")
+                    resp = await kb_service.ingest_applicant_kb(ingest_payload)
+                    print(f"[DEBUG] KB 업로드 응답: {resp}")
+                    kb_sync_results.append({
+                        "application_id": str(application.id),
+                        "job_seeker_id": str(job_seeker.id),
+                        "success": bool(resp.get("success")) if isinstance(resp, dict) else False,
+                        "uploaded": resp.get("uploaded") if isinstance(resp, dict) else None,
+                        "error": resp.get("error") if isinstance(resp, dict) else None,
+                    })
+                    
+                    print(f"[DEBUG] 지원자 {job_seeker.id} 처리 완료")
+                    
+                except Exception as e:
+                    print(f"[DEBUG] 지원자 {application.id} 처리 실패: {str(e)}")
+                    kb_sync_results.append({
+                        "application_id": str(application.id),
+                        "job_seeker_id": str(getattr(job_seeker, 'id', None)) if 'job_seeker' in locals() and job_seeker else None,
+                        "success": False,
+                        "error": str(e)
+                    })
+
+            # 7. 각 지원자별로 면접 진행
+            conversation_service = AIConversationService(self.db)
+            evaluated_count = 0
+            
+            for application in applications:
+                try:
+                    await self._evaluate_application(
+                        application, questions, conversation_service, posting
+                    )
+                    evaluated_count += 1
+                except Exception as e:
+                    # 개별 지원자 평가 실패는 전체 프로세스를 중단하지 않음
+                    print(f"지원자 {application.id} 평가 실패: {str(e)}")
+                    continue
+            
+            # 8. 모든 평가 완료 후 상태 업데이트
+            posting.eval_status = 'finish'
+            self.db.commit()
             
             return {
                 "status": 200,
                 "success": True,
-                "message": "AI 평가가 시작되었습니다",
+                "message": f"AI 평가 완료! (지원자 {len(applications)}명, 평가 완료 {evaluated_count}명)",
                 "data": {
                     "job_posting_id": str(posting.id),
                     "title": posting.title,
-                    "eval_status": posting.eval_status
+                    "eval_status": posting.eval_status,
+                    "questions_generated": len(questions),
+                    "total_applications": len(applications),
+                    "evaluated_count": evaluated_count,
+                    "kb_sync": {
+                        "synced_count": sum(1 for r in kb_sync_results if r.get("success")),
+                        "total": len(kb_sync_results),
+                        "results": kb_sync_results,
+                    }
                 }
             }
             
@@ -79,6 +242,61 @@ class InterviewService:
                 "success": False,
                 "message": f"AI 평가 시작 중 오류가 발생했습니다: {str(e)}"
             }
+    
+    async def _evaluate_application(self, application: Application, questions: list, conversation_service: AIConversationService, job_posting: JobPosting):
+        """개별 지원자 평가 진행"""
+        try:
+            # 1. 지원자 정보 조회
+            job_seeker = (
+                self.db.query(JobSeeker)
+                .filter(JobSeeker.id == application.job_seeker_id)
+                .first()
+            )
+            
+            if not job_seeker:
+                raise Exception(f"지원자 정보를 찾을 수 없습니다: {application.job_seeker_id}")
+            
+            # 2. 면접 대화 진행
+            job_posting_skills = {
+                "hard_skills": job_posting.hard_skills or [],
+                "soft_skills": job_posting.soft_skills or []
+            }
+            interview_result = await conversation_service.conduct_interview(questions, job_seeker, job_posting_skills)
+            conversations = interview_result.get('conversations', [])
+            evaluation_result = interview_result.get('evaluation', {})
+            
+            # 4. AIEvaluation 테이블에 저장
+            ai_evaluation = AIEvaluation(
+                application_id=application.id,
+                hard_score=Decimal(str(evaluation_result.get('hard_score', 0.0))),
+                soft_score=Decimal(str(evaluation_result.get('soft_score', 0.0))),
+                total_score=Decimal(str(evaluation_result.get('total_score', 0.0))),
+                ai_summary=evaluation_result.get('ai_summary', 'AI 평가 결과 없음'),
+                strengths_content=evaluation_result.get('strengths_content', ''),
+                strengths_opinion=evaluation_result.get('strengths_opinion', ''),
+                strengths_evidence=evaluation_result.get('strengths_evidence', ''),
+                concerns_content=evaluation_result.get('concerns_content', ''),
+                concerns_opinion=evaluation_result.get('concerns_opinion', ''),
+                concerns_evidence=evaluation_result.get('concerns_evidence', ''),
+                followup_content=evaluation_result.get('followup_content', ''),
+                followup_opinion=evaluation_result.get('followup_opinion', ''),
+                followup_evidence=evaluation_result.get('followup_evidence', ''),
+                final_opinion=evaluation_result.get('final_opinion', '')
+            )
+            
+            self.db.add(ai_evaluation)
+            
+            # 5. 지원서 상태 업데이트
+            application.application_status = 'ai_evaluated'
+            application.evaluated_at = func.now()
+            
+            self.db.commit()
+            
+            print(f"✅ 지원자 {job_seeker.full_name} 평가 완료")
+            
+        except Exception as e:
+            self.db.rollback()
+            raise Exception(f"지원자 평가 중 오류: {str(e)}")
     
     def get_recruitment_status(self, job_posting_id: str):
         """채용현황 조회 (공고 정보, 지원 목록, 카운트)"""

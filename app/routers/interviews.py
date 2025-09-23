@@ -56,19 +56,6 @@ async def get_individual_report(
     service = InterviewService(db)
     return service.get_individual_report(application_id)
 
-@router.get("/interviews/report/{application_id}")
-async def get_individual_report_by_application(
-    application_id: str,
-    db: Session = Depends(get_db)
-):
-    """기업 리포트 조회 - applications_id로 지원자 이름 반환 (임시 간소 응답)"""
-    service = InterviewService(db)
-    result = service.get_individual_report_by_application(application_id)
-    if not result.get("success"):
-        status_code = result.get("status", 404)
-        raise HTTPException(status_code=status_code, detail=result.get("message", "리포트를 찾을 수 없습니다"))
-    return result
-
 @router.get("/company/interviews/report/{application_id}")
 async def get_company_individual_report_by_application(
     application_id: str,

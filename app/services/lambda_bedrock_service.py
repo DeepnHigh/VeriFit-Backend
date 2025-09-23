@@ -24,6 +24,9 @@ class LambdaBedrockService:
         # KB ingest 전용
         self.lambda_kb_ingest_function_name: Optional[str] = getattr(settings, 'lambda_kb_ingest_function_name', 'verifit-kb-ingest')
         self.lambda_kb_ingest_function_url: Optional[str] = getattr(settings, 'lambda_kb_ingest_function_url', None)
+        # Evaluation 전용
+        self.lambda_evaluation_function_name: Optional[str] = getattr(settings, 'lambda_evaluation_function_name', 'verifit-evaluate-candidate')
+        self.lambda_evaluation_function_url: Optional[str] = getattr(settings, 'lambda_evaluation_function_url', None)
         
         logger.info(f"🔧 Lambda Bedrock Service 초기화 - Region: {self.region}")
         if self.lambda_function_url:
@@ -62,6 +65,10 @@ class LambdaBedrockService:
         data_bytes = json.dumps(payload).encode('utf-8')
 
         target_url = override_url or self.lambda_function_url
+        print(f"[DEBUG] Function URL 호출 - Target URL: {target_url}")
+        print(f"[DEBUG] Override URL: {override_url}")
+        print(f"[DEBUG] Default URL: {self.lambda_function_url}")
+        
         if not target_url:
             raise ValueError("Function URL이 구성되지 않았습니다.")
 
@@ -69,13 +76,16 @@ class LambdaBedrockService:
             logger.info("🔑 SigV4 서명 추가 중...")
             headers = self._get_sigv4_headers(target_url, data_bytes)
 
+        print(f"[DEBUG] HTTP 요청 시작 - URL: {target_url}")
         async with httpx.AsyncClient() as client:
             response = await client.post(
                 target_url,
                 content=data_bytes,
                 headers=headers,
-                timeout=60.0
+                timeout=300.0
             )
+            print(f"[DEBUG] HTTP 응답 - Status: {response.status_code}")
+            print(f"[DEBUG] HTTP 응답 - Body: {response.text}")
             response.raise_for_status() # HTTP 4xx/5xx 에러 시 예외 발생
             return response.json()
 
@@ -299,7 +309,7 @@ class LambdaBedrockService:
             logger.error(f"❌ Lambda Bedrock 최종 평가 생성 중 심각한 오류: {str(e)}")
             raise Exception(f"최종 평가 생성 중 오류가 발생했습니다: {str(e)}")
     
-    async def evaluate_candidate(self, questions: List[str], job_seeker_data: Dict[str, Any], job_posting_skills: Dict[str, Any]) -> Dict[str, Any]:
+    async def evaluate_candidate(self, questions: List[str], job_seeker_data: Dict[str, Any], job_posting_skills: Dict[str, Any], applicant_id: str = None, job_posting_id: str = None) -> Dict[str, Any]:
         """Lambda를 통해 지원자 평가"""
         logger.info(f"🤖 Lambda Bedrock 지원자 평가 시작")
         
@@ -309,16 +319,31 @@ class LambdaBedrockService:
             'job_posting_skills': job_posting_skills
         }
         
+        # KB 참조를 위한 파라미터 추가
+        if applicant_id:
+            payload['applicant_id'] = applicant_id
+        if job_posting_id:
+            payload['job_posting_id'] = job_posting_id
+        
         try:
             # 지원자 평가 전용 Lambda 함수 호출
-            evaluation_function_name = getattr(settings, 'lambda_evaluation_function_name', 'verifit-evaluate-candidate')
-            
-            # 설정에 따라 URL 방식 또는 SDK 방식을 선택
-            if self.lambda_function_url:
-                response_payload = await self._invoke_via_url_async(payload)
+            # 설정에 따라 URL 방식 또는 SDK 방식을 선택 (평가용 전용 설정 우선)
+            evaluation_function_name = self.lambda_evaluation_function_name
+            evaluation_function_url = self.lambda_evaluation_function_url
+
+            if evaluation_function_url:
+                response_payload = await self._invoke_via_url_async(payload, override_url=evaluation_function_url)
             else:
                 response_payload = await self._invoke_via_sdk_async(payload, evaluation_function_name)
             
+            # Function URL 방식은 {statusCode, body} 형태일 수 있으므로 처리
+            if isinstance(response_payload, dict) and 'statusCode' in response_payload and 'body' in response_payload:
+                try:
+                    parsed_body = json.loads(response_payload['body']) if isinstance(response_payload['body'], str) else response_payload['body']
+                except Exception:
+                    parsed_body = {"success": False, "error": "invalid_body"}
+                response_payload = parsed_body
+
             logger.info("✅ Lambda 함수 응답 수신 성공")
 
             # 응답 성공 여부 확인
@@ -352,11 +377,18 @@ class LambdaBedrockService:
     async def ingest_applicant_kb(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         """지원자 KB 인덱싱 Lambda 호출 (full_text/behavior_text/big5_text 업로드+인덱싱)"""
         try:
+            print(f"[DEBUG] KB 업로드 시작 - URL: {self.lambda_kb_ingest_function_url}")
+            print(f"[DEBUG] KB 업로드 Payload: {payload}")
+            
             # URL 우선, 없으면 함수명으로 호출
             if self.lambda_kb_ingest_function_url:
-                resp = await self._invoke_via_url_async(payload, self.lambda_kb_ingest_function_url)
+                print(f"[DEBUG] Function URL 방식으로 호출")
+                resp = await self._invoke_via_url_async(payload, override_url=self.lambda_kb_ingest_function_url)
             else:
+                print(f"[DEBUG] SDK 방식으로 호출 - 함수명: {self.lambda_kb_ingest_function_name}")
                 resp = await self._invoke_via_sdk_async(payload, self.lambda_kb_ingest_function_name)
+            
+            print(f"[DEBUG] KB 업로드 원본 응답: {resp}")
             if not isinstance(resp, dict):
                 return {"success": False, "error": "invalid_response"}
             # Function URL 방식은 {statusCode, body} 형태일 수 있음

@@ -17,32 +17,39 @@ class AIConversationService:
         self.min_answer_length = 50  # 최소 답변 길이
         self.max_answer_length = 2000  # 최대 답변 길이
     
-    async def conduct_interview(self, questions: List[str], job_seeker: JobSeeker) -> List[Dict[str, Any]]:
+    async def conduct_interview(self, questions: List[str], job_seeker: JobSeeker, job_posting_skills: Dict[str, Any] = None) -> Dict[str, Any]:
         """
         Lambda를 통한 면접 진행 (새로운 방식)
         
         Args:
             questions: 면접 질문 리스트
             job_seeker: 지원자 정보
+            job_posting_skills: 채용공고 스킬 정보
             
         Returns:
-            List[Dict]: 질문-답변 대화 리스트
+            Dict: { success, evaluation, conversations }
         """
         try:
             # 지원자 데이터를 딕셔너리로 변환
             job_seeker_data = self._convert_job_seeker_to_dict(job_seeker)
             
-            # Lambda를 통해 전체 면접 진행
+            # Lambda를 통해 전체 면접 진행 (KB 참조를 위한 파라미터 추가)
             response = await self.bedrock_service.evaluate_candidate(
-                questions, job_seeker_data, {}
+                questions, job_seeker_data, job_posting_skills or {}, 
+                applicant_id=str(job_seeker.id)
             )
             
             if response.get('success', False):
                 conversations = response.get('conversations', [])
                 logger.info(f"✅ 면접 완료: {len(conversations)}개 질문 처리")
-                return conversations
+                # evaluation 포함하여 그대로 반환
+                return {
+                    'success': True,
+                    'evaluation': response.get('evaluation', {}),
+                    'conversations': conversations
+                }
             else:
-                raise Exception("Lambda 면접 진행 실패")
+                raise Exception(response.get('error', 'Lambda 면접 진행 실패'))
             
         except Exception as e:
             logger.error(f"❌ 면접 진행 중 오류: {str(e)}")

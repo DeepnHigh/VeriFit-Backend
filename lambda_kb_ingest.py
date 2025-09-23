@@ -43,8 +43,9 @@ def lambda_handler(event, context):
 
         if not applicant_id or not job_posting_id:
             return _resp(400, {"success": False, "error": "applicant_id, job_posting_id required"})
-        if not (full_text or behavior_text or big5_text):
-            return _resp(400, {"success": False, "error": "at least one of full_text, behavior_text, big5_text required"})
+        aiqa_text = payload.get('aiqa_text')
+        if not (full_text or behavior_text or big5_text or aiqa_text):
+            return _resp(400, {"success": False, "error": "at least one of full_text, behavior_text, big5_text, aiqa_text required"})
 
         bucket = payload.get('s3_bucket') or os.environ.get('KB_S3_BUCKET')
         if not bucket:
@@ -76,6 +77,11 @@ def lambda_handler(event, context):
             key_big5 = f"{prefix}/big5_text.txt"
             s3.put_object(Bucket=bucket, Key=key_big5, Body=big5_text.encode('utf-8'), ContentType='text/plain')
             uploaded.append(f"s3://{bucket}/{key_big5}")
+            logger.info(f"S3 업로드 완료 {uploaded[-1]}")
+        if aiqa_text:
+            key_aiqa = f"{prefix}/aiqa_text.txt"
+            s3.put_object(Bucket=bucket, Key=key_aiqa, Body=aiqa_text.encode('utf-8'), ContentType='text/plain')
+            uploaded.append(f"s3://{bucket}/{key_aiqa}")
             logger.info(f"S3 업로드 완료 {uploaded[-1]}")
 
         # KB 인덱싱 시작 (증분) - Control-plane 클라이언트 사용

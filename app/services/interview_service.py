@@ -512,6 +512,44 @@ class InterviewService:
             hard_skills = []
             soft_skills = []
 
+        # ai_evaluations 조회 (해당 application의 최신 평가 1건)
+        ai_eval_row = (
+            self.db.query(AIEvaluation)
+            .filter(AIEvaluation.application_id == application.id)
+            .order_by(AIEvaluation.created_at.desc())
+            .first()
+        )
+
+        ai_evaluation = None
+        if ai_eval_row:
+            # Decimal -> float 변환 및 직렬화 가능한 형태로 변환
+            def _to_float(val):
+                try:
+                    return float(val) if val is not None else None
+                except Exception:
+                    return None
+
+            ai_evaluation = {
+                "id": str(ai_eval_row.id),
+                "hard_score": _to_float(ai_eval_row.hard_score),
+                "soft_score": _to_float(ai_eval_row.soft_score),
+                "total_score": _to_float(ai_eval_row.total_score),
+                "ai_summary": ai_eval_row.ai_summary,
+                "hard_detail_scores": ai_eval_row.hard_detail_scores,
+                "soft_detail_scores": ai_eval_row.soft_detail_scores,
+                "strengths_content": ai_eval_row.strengths_content,
+                "strengths_opinion": ai_eval_row.strengths_opinion,
+                "strengths_evidence": ai_eval_row.strengths_evidence,
+                "concerns_content": ai_eval_row.concerns_content,
+                "concerns_opinion": ai_eval_row.concerns_opinion,
+                "concerns_evidence": ai_eval_row.concerns_evidence,
+                "followup_content": ai_eval_row.followup_content,
+                "followup_opinion": ai_eval_row.followup_opinion,
+                "followup_evidence": ai_eval_row.followup_evidence,
+                "final_opinion": ai_eval_row.final_opinion,
+                "created_at": ai_eval_row.created_at.isoformat() if getattr(ai_eval_row, "created_at", None) else None,
+            }
+
         return {
             "status": 200,
             "success": True,
@@ -522,6 +560,7 @@ class InterviewService:
                 "full_name": full_name,
                 "hard_skills": hard_skills,
                 "soft_skills": soft_skills,
+                "ai_evaluation": ai_evaluation,
             },
         }
     

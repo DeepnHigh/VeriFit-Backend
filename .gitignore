@@ -48,3 +48,6 @@ ENV/
 
 # 업로드 파일
 uploads/
+
+# workspace 파일
+Verifit.code-workspace

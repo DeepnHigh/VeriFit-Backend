@@ -2,8 +2,8 @@ module.exports = {
     apps: [{
       name: 'verifit-backend',
       script: 'run.py',
-      interpreter: '/mnt/hdd_sda/.conda/envs/verifit/bin/python',
-      cwd: '/home/nikmir419/VeriFit-Backend',
+      interpreter: 'python',
+      cwd: '/mnt/hdd_sda/projects/VeriFit-Backend',
       env_file: '.env',
       env: {
         NODE_ENV: 'production',

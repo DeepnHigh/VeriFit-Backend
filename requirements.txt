@@ -14,3 +14,4 @@ boto3==1.34.0  # AWS Bedrock용
 requests==2.31.0  # Mathpix API용
 Pillow==10.1.0  # 이미지 처리용
 pandas==2.1.4  # CSV 파싱용
+httpx==0.28.1  # HTTP 클라이언트 (AWS Lambda 호출용)

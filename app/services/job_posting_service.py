@@ -69,6 +69,21 @@ class JobPostingService:
         hard_skills_value = ai_criteria.get("hard_skills") if isinstance(ai_criteria, dict) else None
         soft_skills_value = ai_criteria.get("soft_skills") if isinstance(ai_criteria, dict) else None
 
+        # culture / benefits NOT NULL 보정
+        culture_value = posting_data.get("culture")
+        if culture_value is None:
+            culture_value = ""
+
+        benefits_value = posting_data.get("benefits")
+        if benefits_value is None or benefits_value == "":
+            benefits_value = []
+        elif isinstance(benefits_value, str):
+            try:
+                parsed_benefits = json.loads(benefits_value)
+                benefits_value = parsed_benefits if isinstance(parsed_benefits, (list, dict)) else []
+            except json.JSONDecodeError:
+                benefits_value = []
+
         job_posting = JobPosting(
             company_id=company_id,
             title=title,
@@ -80,6 +95,8 @@ class JobPostingService:
             main_tasks=main_tasks,
             requirements=requirements_text,
             preferred=posting_data.get("preferred"),
+            culture=culture_value,
+            benefits=benefits_value,
             application_deadline=application_deadline,
             is_active=is_active,
             hard_skills=hard_skills_value if isinstance(hard_skills_value, list) else None,
@@ -108,6 +125,7 @@ class JobPostingService:
         except Exception:
             # 리포트 생성 실패는 공고 생성 자체를 막지 않음
             self.db.rollback()
+        
 
         # 응답 데이터 구성 (requirements는 리스트로 복원)
         response_requirements = []
@@ -133,6 +151,8 @@ class JobPostingService:
             "main_tasks": job_posting.main_tasks,
             "requirements": response_requirements,
             "preferred": job_posting.preferred,
+            "culture": job_posting.culture,
+            "benefits": job_posting.benefits or [],
             "application_deadline": job_posting.application_deadline.isoformat() if job_posting.application_deadline else None,
             "is_active": job_posting.is_active,
             "status": "active" if job_posting.is_active else "inactive",
@@ -177,6 +197,8 @@ class JobPostingService:
             "main_tasks": posting.main_tasks,
             "requirements": requirements_list,
             "preferred": posting.preferred,
+            "culture": posting.culture,
+            "benefits": posting.benefits or [],
             "application_deadline": posting.application_deadline.isoformat() if posting.application_deadline else None,
             "is_active": posting.is_active,
             "status": "active" if posting.is_active else "inactive",
@@ -234,6 +256,8 @@ class JobPostingService:
                     "main_tasks": posting.main_tasks,
                     "requirements": posting.requirements,
                     "preferred": posting.preferred,
+                    "culture": posting.culture,
+                    "benefits": posting.benefits or [],
                     "application_deadline": posting.application_deadline.isoformat() if posting.application_deadline else None,
                     "is_active": posting.is_active,
                     "created_at": posting.created_at.isoformat() if posting.created_at else "",

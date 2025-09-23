@@ -265,26 +265,64 @@ class InterviewService:
             conversations = interview_result.get('conversations', [])
             evaluation_result = interview_result.get('evaluation', {})
             
-            # 4. AIEvaluation 테이블에 저장
-            ai_evaluation = AIEvaluation(
-                application_id=application.id,
-                hard_score=Decimal(str(evaluation_result.get('hard_score', 0.0))),
-                soft_score=Decimal(str(evaluation_result.get('soft_score', 0.0))),
-                total_score=Decimal(str(evaluation_result.get('total_score', 0.0))),
-                ai_summary=evaluation_result.get('ai_summary', 'AI 평가 결과 없음'),
-                strengths_content=evaluation_result.get('strengths_content', ''),
-                strengths_opinion=evaluation_result.get('strengths_opinion', ''),
-                strengths_evidence=evaluation_result.get('strengths_evidence', ''),
-                concerns_content=evaluation_result.get('concerns_content', ''),
-                concerns_opinion=evaluation_result.get('concerns_opinion', ''),
-                concerns_evidence=evaluation_result.get('concerns_evidence', ''),
-                followup_content=evaluation_result.get('followup_content', ''),
-                followup_opinion=evaluation_result.get('followup_opinion', ''),
-                followup_evidence=evaluation_result.get('followup_evidence', ''),
-                final_opinion=evaluation_result.get('final_opinion', '')
+            # 4. AIEvaluation 테이블 업서트(있으면 업데이트, 없으면 생성)
+            existing_ai_evaluation = (
+                self.db.query(AIEvaluation)
+                .filter(AIEvaluation.application_id == application.id)
+                .first()
             )
-            
-            self.db.add(ai_evaluation)
+
+            hard_score = Decimal(str(evaluation_result.get('hard_score', 0.0)))
+            soft_score = Decimal(str(evaluation_result.get('soft_score', 0.0)))
+            total_score = Decimal(str(evaluation_result.get('total_score', 0.0)))
+            ai_summary = evaluation_result.get('ai_summary', 'AI 평가 결과 없음')
+            strengths_content = evaluation_result.get('strengths_content', '')
+            strengths_opinion = evaluation_result.get('strengths_opinion', '')
+            strengths_evidence = evaluation_result.get('strengths_evidence', '')
+            concerns_content = evaluation_result.get('concerns_content', '')
+            concerns_opinion = evaluation_result.get('concerns_opinion', '')
+            concerns_evidence = evaluation_result.get('concerns_evidence', '')
+            followup_content = evaluation_result.get('followup_content', '')
+            followup_opinion = evaluation_result.get('followup_opinion', '')
+            followup_evidence = evaluation_result.get('followup_evidence', '')
+            final_opinion = evaluation_result.get('final_opinion', '')
+
+            if existing_ai_evaluation:
+                existing_ai_evaluation.hard_score = hard_score
+                existing_ai_evaluation.soft_score = soft_score
+                existing_ai_evaluation.total_score = total_score
+                existing_ai_evaluation.ai_summary = ai_summary
+                existing_ai_evaluation.strengths_content = strengths_content
+                existing_ai_evaluation.strengths_opinion = strengths_opinion
+                existing_ai_evaluation.strengths_evidence = strengths_evidence
+                existing_ai_evaluation.concerns_content = concerns_content
+                existing_ai_evaluation.concerns_opinion = concerns_opinion
+                existing_ai_evaluation.concerns_evidence = concerns_evidence
+                existing_ai_evaluation.followup_content = followup_content
+                existing_ai_evaluation.followup_opinion = followup_opinion
+                existing_ai_evaluation.followup_evidence = followup_evidence
+                existing_ai_evaluation.final_opinion = final_opinion
+                # 재평가 시점으로 타임스탬프 갱신
+                existing_ai_evaluation.created_at = func.now()
+            else:
+                ai_evaluation = AIEvaluation(
+                    application_id=application.id,
+                    hard_score=hard_score,
+                    soft_score=soft_score,
+                    total_score=total_score,
+                    ai_summary=ai_summary,
+                    strengths_content=strengths_content,
+                    strengths_opinion=strengths_opinion,
+                    strengths_evidence=strengths_evidence,
+                    concerns_content=concerns_content,
+                    concerns_opinion=concerns_opinion,
+                    concerns_evidence=concerns_evidence,
+                    followup_content=followup_content,
+                    followup_opinion=followup_opinion,
+                    followup_evidence=followup_evidence,
+                    final_opinion=final_opinion,
+                )
+                self.db.add(ai_evaluation)
             
             # 5. 지원서 상태 업데이트
             application.application_status = 'ai_evaluated'

@@ -21,18 +21,16 @@ async def start_evaluation(
     db: Session = Depends(get_db)
 ):
     """
-    AI 평가 시작 - job_posting의 eval_status를 'ing'로 업데이트
+    AI 평가 시작 - 새로운 프로세스 적용
     
-    TODO: 
-    1. AI 대결 시스템 구현 (기업 AI vs 지원자 AI)
-    2. RAG 기반 채용공고 정보 생성
-    3. RAG 기반 지원자 이력서 정보 생성
-    4. AWS Bedrock Lambda를 통한 AI 평가 실행
-    5. 평가 결과를 AIEvaluation 테이블에 저장
-    6. eval_status를 'finish'로 업데이트
+    프로세스:
+    1. 채용공고 정보로 면접 질문 생성
+    2. 지원자별로 면접 진행 (질문-답변)
+    3. LangChain 기반 재시도로 완전한 답변 보장
+    4. 최종 평가 결과 생성 및 저장
     """
     service = InterviewService(db)
-    result = service.start_evaluation(job_posting_id)
+    result = await service.start_evaluation(job_posting_id)
     
     if not result.get("success"):
         status_code = result.get("status", 500)

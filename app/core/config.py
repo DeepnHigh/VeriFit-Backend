@@ -49,6 +49,18 @@ class Settings(BaseSettings):
     # Function URL 인증 방식: NONE 또는 AWS_IAM
     lambda_function_url_auth: Optional[str] = Field(default="NONE", alias="LAMBDA_FUNCTION_URL_AUTH")
 
+    # 면접 질문 생성용 별도 Lambda 설정 (기존 기능과 분리)
+    lambda_questions_function_name: str = Field(default="verifit-generate-questions", alias="LAMBDA_QUESTIONS_FUNCTION_NAME")
+    lambda_questions_function_url: Optional[str] = Field(default=None, alias="LAMBDA_QUESTIONS_FUNCTION_URL")
+
+    # 지원자 평가용 별도 Lambda 설정 (향후 사용)
+    lambda_evaluation_function_name: str = Field(default="verifit-evaluate-candidate", alias="LAMBDA_EVALUATION_FUNCTION_NAME")
+    lambda_evaluation_function_url: Optional[str] = Field(default=None, alias="LAMBDA_EVALUATION_FUNCTION_URL")
+
+    # KB 인덱싱용 별도 Lambda 설정
+    lambda_kb_ingest_function_name: str = Field(default="verifit-kb-ingest", alias="LAMBDA_KB_INGEST_FUNCTION_NAME")
+    lambda_kb_ingest_function_url: Optional[str] = Field(default=None, alias="LAMBDA_KB_INGEST_FUNCTION_URL")
+
     # GitHub Token (권장: .env 또는 환경변수로 설정)
     github_token: Optional[str] = Field(default=None, alias="GITHUB_TOKEN")
 

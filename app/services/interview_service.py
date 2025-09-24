@@ -286,12 +286,21 @@ class InterviewService:
             followup_opinion = evaluation_result.get('followup_opinion', '')
             followup_evidence = evaluation_result.get('followup_evidence', '')
             final_opinion = evaluation_result.get('final_opinion', '')
+            highlight_text = evaluation_result.get('highlight') or evaluation_result.get('interview_highlights') or None
+            highlight_reason = evaluation_result.get('highlight_reason') or None
 
             if existing_ai_evaluation:
                 existing_ai_evaluation.hard_score = hard_score
                 existing_ai_evaluation.soft_score = soft_score
                 existing_ai_evaluation.total_score = total_score
                 existing_ai_evaluation.ai_summary = ai_summary
+                # 하드/소프트 상세 분석 필드 저장 (Facilitator 또는 평가 결과에서 제공되는 키 확인)
+                existing_ai_evaluation.hard_detail_scores = (
+                    evaluation_result.get('hard_detail_scores') or evaluation_result.get('hard_eval') or None
+                )
+                existing_ai_evaluation.soft_detail_scores = (
+                    evaluation_result.get('soft_detail_scores') or evaluation_result.get('soft_eval') or None
+                )
                 existing_ai_evaluation.strengths_content = strengths_content
                 existing_ai_evaluation.strengths_opinion = strengths_opinion
                 existing_ai_evaluation.strengths_evidence = strengths_evidence
@@ -302,6 +311,8 @@ class InterviewService:
                 existing_ai_evaluation.followup_opinion = followup_opinion
                 existing_ai_evaluation.followup_evidence = followup_evidence
                 existing_ai_evaluation.final_opinion = final_opinion
+                existing_ai_evaluation.highlight = highlight_text
+                existing_ai_evaluation.highlight_reason = highlight_reason
                 # 재평가 시점으로 타임스탬프 갱신
                 existing_ai_evaluation.created_at = func.now()
             else:
@@ -311,6 +322,8 @@ class InterviewService:
                     soft_score=soft_score,
                     total_score=total_score,
                     ai_summary=ai_summary,
+                    hard_detail_scores=(evaluation_result.get('hard_detail_scores') or evaluation_result.get('hard_eval') or None),
+                    soft_detail_scores=(evaluation_result.get('soft_detail_scores') or evaluation_result.get('soft_eval') or None),
                     strengths_content=strengths_content,
                     strengths_opinion=strengths_opinion,
                     strengths_evidence=strengths_evidence,
@@ -321,6 +334,8 @@ class InterviewService:
                     followup_opinion=followup_opinion,
                     followup_evidence=followup_evidence,
                     final_opinion=final_opinion,
+                    highlight=highlight_text,
+                    highlight_reason=highlight_reason,
                 )
                 self.db.add(ai_evaluation)
             
@@ -537,6 +552,8 @@ class InterviewService:
                 "ai_summary": ai_eval_row.ai_summary,
                 "hard_detail_scores": ai_eval_row.hard_detail_scores,
                 "soft_detail_scores": ai_eval_row.soft_detail_scores,
+                "highlight": ai_eval_row.highlight,
+                "highlight_reason": ai_eval_row.highlight_reason,
                 "strengths_content": ai_eval_row.strengths_content,
                 "strengths_opinion": ai_eval_row.strengths_opinion,
                 "strengths_evidence": ai_eval_row.strengths_evidence,

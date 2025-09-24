@@ -28,6 +28,9 @@ class AIEvaluation(Base):
     followup_opinion = Column(Text)  # 후속검증 제안 - AI면접관 의견
     followup_evidence = Column(Text)  # 후속검증 제안 - 근거
     final_opinion = Column(Text)  # AI 면접관 최종 의견
+    # 면접 하이라이트 텍스트 및 선정 이유
+    highlight = Column(Text)  # 면접 하이라이트 (요약된 발화)
+    highlight_reason = Column(Text)  # 하이라이트 선정 이유 또는 근거
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     # 관계 설정

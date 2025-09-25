@@ -1,4 +1,4 @@
-from typing import Dict, Any
+from typing import Dict, Any, List
 from sqlalchemy.orm import Session
 from sqlalchemy import and_
 from datetime import datetime
@@ -74,3 +74,56 @@ class ApplicationService:
                 "applied_at": application.applied_at.isoformat() if application.applied_at else datetime.utcnow().isoformat() + "Z"
             }
         }
+
+    def list_applications_by_job_seeker(self, job_seeker_id: str) -> Dict[str, Any]:
+        """
+        지원자의 지원 목록을 조회합니다.
+        - job_seeker_id가 실제 job_seekers.id가 아닐 경우 user_id로 매핑 시도
+        - 결과는 프론트 요구 스키마에 맞춰 배열로 반환
+        """
+        # 1) 입력값을 UUID로 파싱 시도
+        from uuid import UUID
+        seeker = None
+        try:
+            parsed = UUID(job_seeker_id)
+            seeker = self.db.query(JobSeeker).filter(JobSeeker.id == parsed).first()
+        except Exception:
+            seeker = None
+
+        # 2) seeker가 없으면 user_id로 매핑 시도
+        if not seeker:
+            try:
+                parsed_user = UUID(job_seeker_id)
+                seeker = self.db.query(JobSeeker).filter(JobSeeker.user_id == parsed_user).first()
+            except Exception:
+                seeker = None
+
+        if not seeker:
+            return {"status": 404, "success": False, "message": "지원자를 찾을 수 없습니다."}
+
+        # 3) applications 조인 조회
+        from sqlalchemy.orm import joinedload
+        query = (
+            self.db.query(Application)
+            .options(
+                joinedload(Application.job_posting).joinedload(JobPosting.company)
+            )
+            .filter(Application.job_seeker_id == seeker.id)
+            .order_by(Application.applied_at.desc())
+        )
+
+        rows: List[Application] = query.all()
+        items: List[Dict[str, Any]] = []
+        for app in rows:
+            job_posting = app.job_posting
+            company_name = job_posting.company.company_name if (job_posting and job_posting.company) else None
+            items.append({
+                "applications_id": str(app.id),
+                "job_posting_id": str(job_posting.id) if job_posting else None,
+                "job_title": job_posting.title if job_posting else None,
+                "company_name": company_name,
+                "applied_at": app.applied_at.isoformat() if app.applied_at else None,
+                "status": app.application_status
+            })
+
+        return {"status": 200, "success": True, "data": items}

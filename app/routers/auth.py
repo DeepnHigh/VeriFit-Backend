@@ -55,24 +55,6 @@ async def login(
         "user_name": user_name
     }
 
-@router.post("/register", response_model=UserResponse)
-async def register(
-    user_data: UserCreate,
-    db: Session = Depends(get_db)
-):
-    """회원가입 API"""
-    auth_service = AuthService(db)
-    
-    # 이메일 중복 확인
-    if auth_service.get_user_by_email(user_data.email):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="이미 등록된 이메일입니다"
-        )
-    
-    user = auth_service.create_user(user_data)
-    return UserResponse.model_validate(user)
-
 
 @router.post("/signup/applicant", response_model=UserResponse)
 async def signup_applicant(

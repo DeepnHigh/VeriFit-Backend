@@ -143,8 +143,6 @@ class PersonalInfoService:
                 # personal_info는 Pydantic 모델 또는 dict 호환
                 pi = personal_info if isinstance(personal_info, dict) else personal_info.model_dump()
                 # None이 아닌 값만 업데이트
-                if pi.get('full_name') is not None:
-                    job_seeker.full_name = pi['full_name']
                 if pi.get('phone') is not None:
                     job_seeker.phone = pi['phone']
                 if pi.get('email') is not None:

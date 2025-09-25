@@ -3,7 +3,6 @@ from typing import Optional
 
 class PersonalInfo(BaseModel):
     """개인정보 추출 결과"""
-    full_name: Optional[str] = None
     email: Optional[str] = None
     phone: Optional[str] = None
     education_level: Optional[str] = None

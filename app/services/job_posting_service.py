@@ -75,14 +75,15 @@ class JobPostingService:
             culture_value = ""
 
         benefits_value = posting_data.get("benefits")
-        if benefits_value is None or benefits_value == "":
-            benefits_value = []
-        elif isinstance(benefits_value, str):
-            try:
-                parsed_benefits = json.loads(benefits_value)
-                benefits_value = parsed_benefits if isinstance(parsed_benefits, (list, dict)) else []
-            except json.JSONDecodeError:
-                benefits_value = []
+        # benefits 컬럼은 DB에서 TEXT 이므로 문자열로 저장
+        # - 프런트가 문자열을 주면 그대로 저장
+        # - 리스트/딕셔너리를 주면 JSON 문자열로 직렬화하여 저장
+        if benefits_value is None:
+            benefits_value = ""
+        elif isinstance(benefits_value, (list, dict)):
+            benefits_value = json.dumps(benefits_value, ensure_ascii=False)
+        else:
+            benefits_value = str(benefits_value)
 
         job_posting = JobPosting(
             company_id=company_id,
@@ -152,7 +153,7 @@ class JobPostingService:
             "requirements": response_requirements,
             "preferred": job_posting.preferred,
             "culture": job_posting.culture,
-            "benefits": job_posting.benefits or [],
+            "benefits": job_posting.benefits or "",
             "application_deadline": job_posting.application_deadline.isoformat() if job_posting.application_deadline else None,
             "is_active": job_posting.is_active,
             "status": "active" if job_posting.is_active else "inactive",
@@ -184,10 +185,14 @@ class JobPostingService:
                     requirements_list = [posting.requirements]
             except json.JSONDecodeError:
                 requirements_list = [posting.requirements]
+        # company_id로 회사명 조회
+        company = self.db.query(Company).filter(Company.id == posting.company_id).first()
+        company_name = company.company_name if company else None
 
         return {
             "id": str(posting.id),
             "company_id": str(posting.company_id),
+            "company_name": company_name,
             "title": posting.title,
             "position_level": posting.position_level,
             "employment_type": posting.employment_type,
@@ -198,7 +203,7 @@ class JobPostingService:
             "requirements": requirements_list,
             "preferred": posting.preferred,
             "culture": posting.culture,
-            "benefits": posting.benefits or [],
+            "benefits": posting.benefits or "",
             "application_deadline": posting.application_deadline.isoformat() if posting.application_deadline else None,
             "is_active": posting.is_active,
             "status": "active" if posting.is_active else "inactive",

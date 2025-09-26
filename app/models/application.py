@@ -22,5 +22,6 @@ class Application(Base):
     job_seeker = relationship("JobSeeker", back_populates="applications")
     ai_evaluations = relationship("AIEvaluation", back_populates="application")
     ai_interview_messages = relationship("AIInterviewMessage", back_populates="application")
+    interview_highlights = relationship("InterviewHighlight", back_populates="application")
 
 

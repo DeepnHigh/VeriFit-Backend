@@ -38,7 +38,7 @@ class AIConversationService:
             raise Exception("환경변수 UPLOAD_URL이 설정되지 않았습니다.")
         if not FACILITATOR_AI_URL:
             raise Exception("환경변수 FACILITATOR_AI_URL이 설정되지 않았습니다.")
-
+        
         job_seeker_data = self._convert_job_seeker_to_dict(job_seeker)
         name = job_seeker.full_name or f"applicant-{job_seeker.id}"
 
@@ -56,19 +56,18 @@ class AIConversationService:
 
         # 1) 업로드 람다 호출
         upload_payload = {
-            "user_id": f"applicant-{job_seeker.id}",
+            "user_id": str(job_seeker.id),
+            # job_posting_id는 위에서 필수 검증을 통과한 값이므로 그대로 문자열 변환
+            "job_posting_id": str(job_posting_id),
             "full_text": full_text,
             "behavior_text": behavior_text,
             "big5_text": big5_text,
             "aiqa_text": aiqa_text,
-            # 선택적으로 전달 (람다가 이해한다면):
             "questions": questions or [],
             "job_postings": {
                 "hard_skills": job_posting_skills.get('hard_skills', []) if job_posting_skills else [],
                 "soft_skills": job_posting_skills.get('soft_skills', []) if job_posting_skills else []
             },
-            # 하위 시스템에서 필요할 수 있는 식별자 (호환성 유지 목적)
-            "job_posting_id": job_posting_id,
             "job_seeker_data": {
                 "full_name": job_seeker_data.get('full_name') or "",
                 "email": job_seeker_data.get('email') or ""
@@ -79,7 +78,7 @@ class AIConversationService:
         timeout = aiohttp.ClientTimeout(total=900) # 총 대기 시간을 900초(15분)로 설정
         try:
             async with aiohttp.ClientSession(timeout=timeout) as session:
-                logger.info("➡️ UPLOAD 호출")
+                logger.info(f"➡️ UPLOAD 호출 (user_id={job_seeker.id}, job_posting_id={job_posting_id})")
                 async with session.post(UPLOAD_URL, json=upload_payload, headers={"Content-Type": "application/json"}) as up_resp:
                     up_status = up_resp.status
                     up_text = await up_resp.text()
@@ -125,35 +124,6 @@ class AIConversationService:
                 if fac_data.get('success', False):
                     evaluation = fac_data.get('evaluation', {}) or {}
                     message_history = fac_data.get('message_history', conversations) or conversations
-
-                    # Normalize evaluation fields and fill missing pieces
-                    hard_eval = evaluation.get('hard_eval') or evaluation.get('hard_detail_scores') or evaluation.get('hardEval')
-                    soft_eval = evaluation.get('soft_eval') or evaluation.get('soft_detail_scores') or evaluation.get('softEval')
-
-                    if hard_eval is not None and not isinstance(hard_eval, list):
-                        try:
-                            if isinstance(hard_eval, str):
-                                hard_eval = [int(x.strip()) for x in hard_eval.split(',') if x.strip().isdigit()]
-                            else:
-                                hard_eval = list(hard_eval)
-                        except Exception:
-                            hard_eval = [hard_eval]
-
-                    if soft_eval is not None and not isinstance(soft_eval, list):
-                        try:
-                            if isinstance(soft_eval, str):
-                                soft_eval = [int(x.strip()) for x in soft_eval.split(',') if x.strip().isdigit()]
-                            else:
-                                soft_eval = list(soft_eval)
-                        except Exception:
-                            soft_eval = [soft_eval]
-
-                    if hard_eval is not None:
-                        evaluation['hard_eval'] = hard_eval
-                        evaluation['hard_detail_scores'] = hard_eval
-                    if soft_eval is not None:
-                        evaluation['soft_eval'] = soft_eval
-                        evaluation['soft_detail_scores'] = soft_eval
 
                     if not evaluation.get('highlight'):
                         try:
@@ -268,4 +238,3 @@ class AIConversationService:
         highlight_reason = " / ".join(reason_parts) if reason_parts else "선정 기준: 답변의 구체성 및 AI 평가 근거 매칭"
 
         return (highlight_text, highlight_reason)
-

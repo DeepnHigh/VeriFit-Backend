@@ -222,8 +222,9 @@ class InterviewService:
             }
     
     async def _evaluate_application(self, application: Application, questions: list, conversation_service: Any, job_posting: JobPosting):
-        """개별 지원자 평가 진행"""
         try:
+            hard_skills = job_posting.hard_skills or []
+            soft_skills = job_posting.soft_skills or []
             # 1. 지원자 정보 조회
             job_seeker = (
                 self.db.query(JobSeeker)
@@ -309,12 +310,18 @@ class InterviewService:
                 existing_ai_evaluation.total_score = total_score
                 existing_ai_evaluation.ai_summary = ai_summary
                 # 하드/소프트 상세 분석 필드 저장 (Facilitator 또는 평가 결과에서 제공되는 키 확인)
-                existing_ai_evaluation.hard_detail_scores = (
-                    evaluation_result.get('hard_detail_scores') or evaluation_result.get('hard_eval') or None
-                )
-                existing_ai_evaluation.soft_detail_scores = (
-                    evaluation_result.get('soft_detail_scores') or evaluation_result.get('soft_eval') or None
-                )
+                # hard_detail_scores/soft_detail_scores가 list로 올 경우 dict로 변환
+                def _normalize_detail_scores(detail, skills):
+                    if isinstance(detail, dict):
+                        return detail
+                    if isinstance(detail, list) and isinstance(skills, list):
+                        return {str(sk): detail[idx] if idx < len(detail) else None for idx, sk in enumerate(skills)}
+                    return None
+
+                hard_detail_raw = evaluation_result.get('hard_detail_scores') or evaluation_result.get('hard_eval') or None
+                soft_detail_raw = evaluation_result.get('soft_detail_scores') or evaluation_result.get('soft_eval') or None
+                existing_ai_evaluation.hard_detail_scores = _normalize_detail_scores(hard_detail_raw, hard_skills)
+                existing_ai_evaluation.soft_detail_scores = _normalize_detail_scores(soft_detail_raw, soft_skills)
                 existing_ai_evaluation.strengths_content = strengths_content
                 existing_ai_evaluation.strengths_opinion = strengths_opinion
                 existing_ai_evaluation.strengths_evidence = strengths_evidence
@@ -595,6 +602,24 @@ class InterviewService:
                 except Exception:
                     return None
 
+            def _to_str(val):
+                if isinstance(val, str):
+                    return val
+                if val is None:
+                    return ""
+                if isinstance(val, list):
+                    return "\n---\n".join([_to_str(v) for v in val])
+                if isinstance(val, dict):
+                    # dict의 주요 텍스트 값만 추출 (예: chat, text, content)
+                    for k in ["chat", "text", "content"]:
+                        if k in val:
+                            return _to_str(val[k])
+                    return str(val)
+                try:
+                    return str(val)
+                except Exception:
+                    return ""
+
             ai_evaluation = {
                 "id": str(ai_eval_row.id),
                 "hard_score": _to_float(ai_eval_row.hard_score),
@@ -603,8 +628,8 @@ class InterviewService:
                 "ai_summary": ai_eval_row.ai_summary,
                 "hard_detail_scores": ai_eval_row.hard_detail_scores,
                 "soft_detail_scores": ai_eval_row.soft_detail_scores,
-                "highlight": ai_eval_row.highlight,
-                "highlight_reason": ai_eval_row.highlight_reason,
+                "highlight": _to_str(ai_eval_row.highlight),
+                "highlight_reason": _to_str(ai_eval_row.highlight_reason),
                 "strengths_content": ai_eval_row.strengths_content,
                 "strengths_opinion": ai_eval_row.strengths_opinion,
                 "strengths_evidence": ai_eval_row.strengths_evidence,
@@ -665,7 +690,9 @@ class InterviewService:
                 "soft_skills": soft_skills,
                 "ai_evaluation": ai_evaluation,
                 "conversations": conversations,
-                "interview_highlights": interview_highlights,
+                "interview_highlights": (
+                    "\n---\n".join([_to_str(h.get("chat")) for h in interview_highlights]) if isinstance(interview_highlights, list) else _to_str(interview_highlights)
+                ),
             },
         }
 

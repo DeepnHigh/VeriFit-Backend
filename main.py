@@ -13,7 +13,8 @@ from app.models import (
     user, job_seeker, company, job_posting, application,
     ai_evaluation, ai_interview_message, ai_learning_question, 
     ai_overall_report, big5_test_result, evaluation_criteria,
-    job_seeker_ai_agent, ai_learning_answer, job_seeker_document
+    job_seeker_ai_agent, ai_learning_answer, job_seeker_document,
+    interview_highlight
 )
 
 # 데이터베이스 테이블 생성

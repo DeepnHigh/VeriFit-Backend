@@ -15,7 +15,6 @@ class AIInterviewMessage(Base):
     content = Column(Text, nullable=False)  # 메시지 본문
     turn_number = Column(Integer, nullable=False)  # 대화 턴 번호 (1=질문, 2=답변, 3=질문...)
     highlight_turns = Column(JSONB)  # 하이라이트 턴 리스트 (예: [3,4,7,8])
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     # 관계 설정
     application = relationship("Application", back_populates="ai_interview_messages")

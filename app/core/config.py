@@ -59,7 +59,10 @@ class Settings(BaseSettings):
 
     # KB 인덱싱용 별도 Lambda 설정
     lambda_kb_ingest_function_name: str = Field(default="verifit-kb-ingest", alias="LAMBDA_KB_INGEST_FUNCTION_NAME")
-    lambda_kb_ingest_function_url: Optional[str] = Field(default=None, alias="LAMBDA_KB_INGEST_FUNCTION_URL")
+    lambda_kb_ingest_function_url: Optional[str] = Field(default=None, alias="UPLOAD_URL")
+    
+    # 직접 UPLOAD_URL 필드 추가
+    upload_url: Optional[str] = Field(default=None, alias="UPLOAD_URL")
 
     # GitHub Token (권장: .env 또는 환경변수로 설정)
     github_token: Optional[str] = Field(default=None, alias="GITHUB_TOKEN")

@@ -10,7 +10,7 @@ module.exports = {
         DATABASE_URL: 'postgresql://verifit_master:verifit123@verifit-db.cpk0oamsu0g6.us-west-1.rds.amazonaws.com:5432/verifit_db',
         API_BASE_URL: 'http://14.39.95.228:8000',
         CORS_ORIGINS: '["http://localhost:3000", "http://localhost:3001", "http://localhost:8000", "http://localhost:8001", "http://192.168.0.21:3001", "http://192.168.0.21:3000", "http://14.39.95.228:3001", "http://14.39.95.228:3000"]',
-        PORT: 8001,
+        PORT: 8000,
         LAMBDA_FUNCTION_URL: 'https://fm32g7knrrbb226tl63rok63j40vupaa.lambda-url.us-west-1.on.aws/',
         LAMBDA_FUNCTION_URL_AUTH: 'NONE',
         LAMBDA_QUESTIONS_FUNCTION_NAME: 'verifit-generate-questions',

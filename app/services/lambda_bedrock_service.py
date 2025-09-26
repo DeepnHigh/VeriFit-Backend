@@ -27,6 +27,8 @@ class LambdaBedrockService:
         # Evaluation 전용
         self.lambda_evaluation_function_name: Optional[str] = getattr(settings, 'lambda_evaluation_function_name', 'verifit-evaluate-candidate')
         self.lambda_evaluation_function_url: Optional[str] = getattr(settings, 'lambda_evaluation_function_url', None)
+        # Upload URL (UPLOAD_URL 환경변수에서 직접)
+        self.upload_url: Optional[str] = getattr(settings, 'upload_url', None)
         
         logger.info(f"🔧 Lambda Bedrock Service 초기화 - Region: {self.region}")
         if self.lambda_function_url:

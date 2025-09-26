@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from app.database.database import get_db
 from app.services.application_service import ApplicationService
@@ -18,3 +18,15 @@ async def create_application(payload: dict, db: Session = Depends(get_db)):
         raise HTTPException(status_code=status, detail=result.get("message", "요청에 실패했습니다"))
 
     return result
+
+@router.get("/applications")
+async def list_applications(job_seeker_id: str = Query(...), db: Session = Depends(get_db)):
+    service = ApplicationService(db)
+    result = service.list_applications_by_job_seeker(job_seeker_id)
+
+    if not result.get("success"):
+        status_code = result.get("status", 400)
+        raise HTTPException(status_code=status_code, detail=result.get("message", "요청에 실패했습니다"))
+
+    # 프론트 요구사항: JSON 배열 반환
+    return result.get("data", [])

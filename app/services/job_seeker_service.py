@@ -128,10 +128,14 @@ class JobSeekerService:
                 )
             
             # 3. 데이터베이스에 문서 정보 저장
+            # 실제 저장된 파일명을 사용해야 다운로드 시 경로가 일치합니다
+            import os
+            saved_file_basename = os.path.basename(upload_result.get("file_path", ""))
             document = JobSeekerDocument(
                 job_seeker_id=job_seeker.id,
                 document_type=document_type,
-                file_name=upload_result["original_filename"],
+                file_name=saved_file_basename or upload_result.get("original_filename", ""),
+                original_file_name=upload_result.get("original_filename"),
                 file_url=upload_result["file_url"],
                 file_size=upload_result["file_size"],
                 mime_type=upload_result["content_type"]
@@ -157,6 +161,8 @@ class JobSeekerService:
                 "document_id": str(document.id),
                 "file_url": upload_result["file_url"],
                 "file_name": upload_result["original_filename"],
+                "stored_file_name": saved_file_basename or upload_result.get("file_path", ""),
+                "original_file_name": upload_result["original_filename"],
                 "file_size": upload_result["file_size"],
                 "document_type": document_type,
                 "user_id": str(user_id),

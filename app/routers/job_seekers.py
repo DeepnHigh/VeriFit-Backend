@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from app.database.database import get_db
 from app.services.job_seeker_service import JobSeekerService
@@ -9,6 +10,8 @@ from app.schemas.job_seeker import (
 from app.models.application import Application
 from app.schemas.personal_info import PersonalInfoResponse
 import urllib.parse
+import os
+from app.core.config import settings
 
 router = APIRouter()
 
@@ -279,6 +282,8 @@ async def get_user_files(user_id: str, db: Session = Depends(get_db)):
             
             grouped_files[doc_type].append({
                 "name": getattr(doc, 'file_name', ''),
+                "stored_file_name": getattr(doc, 'file_name', ''),
+                "original_file_name": getattr(doc, 'original_file_name', None),
                 "size": getattr(doc, 'file_size', 0),
                 "lastModified": getattr(doc, 'created_at', ''),
                 "downloadUrl": local_url
@@ -298,6 +303,60 @@ async def delete_file(
     decoded_file_name = urllib.parse.unquote(file_name)
     service = JobSeekerService(db)
     return await service.delete_file(user_id, file_type, decoded_file_name)
+
+@router.get("/s3/download/{user_id}/{file_type}/{file_name}")
+async def download_file(
+    user_id: str,
+    file_type: str,
+    file_name: str,
+    db: Session = Depends(get_db)
+):
+    """
+    로컬 업로드 디렉터리에서 파일 다운로드
+    경로: {UPLOAD_DIR}/{user_id}/{file_type}/{file_name}
+    """
+    # URL 인코딩된 파일명 디코딩 및 간단 검증
+    decoded_file_name = urllib.parse.unquote(file_name)
+
+    # 경로 조합 및 디렉터리 트래버설 방지
+    base_dir = os.path.abspath(settings.upload_dir)
+    target_path = os.path.abspath(os.path.join(base_dir, user_id, file_type, decoded_file_name))
+    # 디버그 로그: 실제 조회 경로
+    try:
+        import logging
+        logging.getLogger(__name__).info(f"[DOWNLOAD] base_dir={base_dir} target_path={target_path}")
+    except Exception:
+        pass
+    if not target_path.startswith(base_dir + os.sep):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="잘못된 경로입니다")
+
+    if not os.path.exists(target_path) or not os.path.isfile(target_path):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="파일을 찾을 수 없습니다")
+
+    # DB에서 원본 파일명 조회 (가능하면 원본명으로 다운로드되게 설정)
+    original_name = decoded_file_name
+    try:
+        from app.services.job_seeker_service import JobSeekerService
+        service = JobSeekerService(db)
+        job_seeker = service._get_by_user_id(user_id)
+        if job_seeker:
+            from app.models.job_seeker_document import JobSeekerDocument
+            doc = (
+                db.query(JobSeekerDocument)
+                .filter(
+                    JobSeekerDocument.job_seeker_id == job_seeker.id,
+                    JobSeekerDocument.document_type == file_type,
+                    JobSeekerDocument.file_name == decoded_file_name,
+                )
+                .first()
+            )
+            if doc and getattr(doc, "original_file_name", None):
+                original_name = doc.original_file_name
+    except Exception:
+        pass
+
+    # 파일 응답
+    return FileResponse(target_path, filename=original_name)
 
 # 각 문서 타입별 개별 삭제 엔드포인트
 @router.delete("/s3/delete/{user_id}/cover_letter/{file_name}")

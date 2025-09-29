@@ -63,6 +63,7 @@ class JobSeekerDocumentBase(BaseModel):
     file_url: str
     file_size: Optional[int] = None
     mime_type: Optional[str] = None
+    original_file_name: Optional[str] = None
 
 class JobSeekerDocumentCreate(JobSeekerDocumentBase):
     job_seeker_id: str

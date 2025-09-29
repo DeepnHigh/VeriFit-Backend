@@ -29,7 +29,8 @@ class S3Service:
         """
         try:
             import os
-            
+            from app.core.config import settings
+
             # 파일 확장자 추출
             file_extension = ""
             if file.filename and "." in file.filename:
@@ -39,7 +40,7 @@ class S3Service:
             unique_filename = f"{uuid.uuid4()}.{file_extension}" if file_extension else str(uuid.uuid4())
             
             # 로컬 저장 경로 생성: uploads/{user_id}/{document_type}/{unique_filename}
-            upload_dir = f"uploads/{user_id}/{document_type}"
+            upload_dir = f"{settings.upload_dir}/{user_id}/{document_type}"
             os.makedirs(upload_dir, exist_ok=True)
             
             file_path = f"{upload_dir}/{unique_filename}"

@@ -367,7 +367,18 @@ class InterviewService:
                 # conversations는 conduct_interview에서 전달된 message list
                 for conv in (conversations or []):
                     try:
-                        sender = conv.get('sender')
+                        # 일부 소스(conduct_interview)에서는 'role' 키만 존재하므로 fallback 처리
+                        sender_raw = (conv.get('sender') or conv.get('role') or '').lower()
+                        if sender_raw in ('interviewer','interviewer_ai','facilitator','reviewer'):
+                            sender = 'interviewer_ai'
+                        elif sender_raw in ('applicant','candidate','candidate_ai','user','answer'):
+                            sender = 'candidate_ai'
+                        elif sender_raw in ('system','notice','error','question'):
+                            # 시스템/질문 메시지는 면접관 측으로 분류 (별도 enum 추가 전 임시 정책)
+                            sender = 'interviewer_ai'
+                        else:
+                            # 미지정 값 기본 지원자 측
+                            sender = 'candidate_ai'
                         message_type = conv.get('message_type') or 'other'
                         content = conv.get('content') or ''
                         turn_number = conv.get('turn_number') or conv.get('question_number') or 0
@@ -652,6 +663,7 @@ class InterviewService:
 
         conversations = []
         for m in messages:
+            # 변환 없이 DB의 sender(interviewer_ai / candidate_ai) 그대로 전달
             conversations.append({
                 "id": str(m.id),
                 "sender": m.sender,
@@ -665,17 +677,16 @@ class InterviewService:
         # highlight 텍스트가 있으면 간단하게 채팅 형식으로 변환해서 interview_highlights에 포함
         interview_highlights = []
         if ai_evaluation and ai_evaluation.get('highlight'):
-            # ai_evaluation.highlight은 conduct_interview의 _compute_highlights에서 생성된 문자열(여러 발화 연결)
-            # 간단한 파싱: '---' 구분자를 사용해 분리하고 각 블록을 chat 스타일 텍스트로 넣음
             try:
                 parts = ai_evaluation.get('highlight').split('\n---\n')
                 for p in parts:
-                    # p는 'Q: ... A: ...' 형식일 가능성이 높으므로 그대로 표시
+                    text_block = p.strip()
+                    # 역할 추정은 하지 않고 원문만 전달 (프론트가 필요 시 문자열 패턴/Q:,A: 여부로 자체 판단)
                     interview_highlights.append({
-                        "chat": p.strip()
+                        "chat": text_block
                     })
             except Exception:
-                interview_highlights = [{"chat": ai_evaluation.get('highlight')}]
+                interview_highlights = [{"chat": ai_evaluation.get('highlight') }]
 
         # 최종 응답
         return {
@@ -690,9 +701,11 @@ class InterviewService:
                 "soft_skills": soft_skills,
                 "ai_evaluation": ai_evaluation,
                 "conversations": conversations,
+                # 프론트 호환을 위해 기존 문자열 형태 유지 + 추가로 structured_highlights를 내려줄 수도 있음
                 "interview_highlights": (
                     "\n---\n".join([_to_str(h.get("chat")) for h in interview_highlights]) if isinstance(interview_highlights, list) else _to_str(interview_highlights)
                 ),
+                "structured_highlights": interview_highlights,
             },
         }
 

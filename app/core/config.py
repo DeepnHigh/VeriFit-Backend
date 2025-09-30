@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     
     # 파일 업로드 설정
     upload_dir: str = Field(default="/mnt/hdd_sda/projects/VeriFit-Backend/uploads", alias="UPLOAD_DIR")
-    max_file_size: int = Field(default=10 * 1024 * 102 4, alias="MAX_FILE_SIZE")  # 10MB
+    max_file_size: int = Field(default=10 * 1024 * 1024, alias="MAX_FILE_SIZE")  # 10MB
     
     # CORS 설정
     cors_origins: List[str] = Field(default=[

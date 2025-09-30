@@ -2,17 +2,23 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from app.core.config import settings
+import os
 
-# SQLAlchemy 엔진 생성 (RDS 연결 슬롯 문제 해결을 위한 균형잡힌 설정)
+# 풀 설정을 환경변수로 조정 가능하도록 확장
+# (기본값은 기존보다 여유 있게 상향하여 AI 평가 중 동시 폴링/요청으로 인한 Timeout 완화)
+POOL_SIZE = int(os.getenv("DB_POOL_SIZE", "10"))          # 기존 3 -> 5
+MAX_OVERFLOW = int(os.getenv("DB_MAX_OVERFLOW", "10"))    # 기존 2 -> 5
+POOL_TIMEOUT = int(os.getenv("DB_POOL_TIMEOUT", "30"))   # 그대로 기본 유지
+POOL_RECYCLE = int(os.getenv("DB_POOL_RECYCLE", "300"))  # 5분
+
 engine = create_engine(
     settings.database_url,
-    # 연결 풀 설정 (RDS 프리티어 균형잡힌 설정)
-    pool_size=3,              # 기본 연결 풀 크기
-    max_overflow=2,           # 추가 연결 허용
-    pool_timeout=30,          # 연결 대기 시간 (30초)
-    pool_recycle=300,         # 연결 재사용 시간 (5분)
-    pool_pre_ping=True,       # 연결 유효성 검사
-    echo=False                # SQL 쿼리 로깅
+    pool_size=POOL_SIZE,
+    max_overflow=MAX_OVERFLOW,
+    pool_timeout=POOL_TIMEOUT,
+    pool_recycle=POOL_RECYCLE,
+    pool_pre_ping=True,
+    echo=False
 )
 
 # 세션 팩토리 생성

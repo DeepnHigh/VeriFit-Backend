@@ -137,7 +137,7 @@ class AIConversationService:
             initial_question = q
             # 2) 질문 추가
             message_history.append({
-                "role": "system",  # 질문 역할
+                "role": "interviewer",  # 질문 역할
                 "type": "question",
                 "question_number": idx + 1,
                 "content": initial_question
@@ -221,7 +221,7 @@ class AIConversationService:
                     logger.info(f"➕ 질문 {idx+1} 불만족 -> follow-up 생성 (count={unsatisfied_count})")
                     if unsatisfied_count >= 2:
                         message_history.append({
-                            "role": "system",
+                            "role": "interviewer",
                             "type": "notice",
                             "content": "반복된 질문에도 지원자AI가 만족스러운 대답을 하지 못했습니다. 다음 질문으로 넘어갑니다"
                         })
